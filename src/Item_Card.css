@@ -1,0 +1,226 @@
+/*
+Custom Styles for the Cards and Container for them
+*/
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, system-ui, sans-serif;
+  background-color: #f3f4f6;
+  padding: 2rem;
+}
+
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.card {
+  background-image: url('./assets/parchment.png');
+  border-radius: 16px;
+  border: 1px solid #aeaeae;
+  outline: 1px solid #aeaeae;
+  outline-offset: -3px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  max-width: 1000px;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-first-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 1rem;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-text-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex-grow: 1;
+  justify-content: center;
+  
+}
+
+.card-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 2px solid #922610;
+  outline: 1px solid #922610;
+  outline-offset: 1px;
+}
+
+.card-content {
+  padding: 0rem 0rem 0rem 1rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-subcontent {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.card-description {
+  color: #4b5563;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.card-subsections-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  padding: 0rem 0rem 0rem 0rem;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.card.expanded .card-subsections-wrapper {
+  grid-template-rows: 1fr;
+}
+
+.card-subsections-inner {
+  overflow: hidden;
+}
+
+.card-subsections {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.subsection {
+  padding: 0.5rem;
+}
+
+.subsection-hidden-wrapper {
+  padding: 0.2rem;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+
+.subsection.expanded .subsection-hidden-wrapper {
+  grid-template-rows: 1fr;
+  
+}
+
+.subsection-hidden-inner {
+  overflow: hidden;
+}
+
+.subsection-hidden {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.subsection-hidden-content {
+  padding: 0rem 0rem 0rem 0.5rem;
+  font-family: bookmania, serif;
+  font-size: .875rem;
+  color: #4b5563;
+  align-self: center;
+  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.affinities-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: auto;
+  gap: 1rem;
+}
+
+.subsection-hidden-img {
+  height: 1.4rem;
+  width: 1.4rem;
+  object-fit: cover;
+}
+
+.subsection h4 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #922610;
+    font-family: modesto-text, serif;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    border-bottom: 1px solid #922610;
+}
+
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: max-content;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  background-color: #371f1f;
+  color: #f9fafb;
+  font-family: bookmania, sans-serif;
+  line-height: 1.2;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  position: absolute;
+  z-index: 10;
+  bottom: 125%; 
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.card.expanded .card-subsections-inner:hover {
+  overflow: visible;
+}
+
+.subsection.expanded .subsection-hidden-inner:hover {
+  overflow: visible;
+}
