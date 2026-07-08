@@ -402,15 +402,15 @@ function Item_Creator_Menu() {
   const[draftItem, setDraftItem] = useState({
     title: "",
     description: "",
-    iamge: "",
+    image: "",
     stats: {
-      rarity: "",
-      form: "",
-      material: "",
-      durability: ""
+      rarity: "common",
+      form: "solid",
+      material: "wood",
+      durability: "poor"
     },
     magicalProperties: {
-      descritpion: "",
+      description: "",
       spellAffinities: [],
       damageAffinities: [],
       spellDisaffinities: [],
@@ -418,7 +418,7 @@ function Item_Creator_Menu() {
     },
     alchemicalProperties: {
       description: "",
-      dissolvesIn: [], 
+      dissolvesIn: ["alcohol"], 
       reactsWith: [],
       reactions: [], 
       uses: [], 
@@ -426,8 +426,8 @@ function Item_Creator_Menu() {
     },
     spiritualProperties: { 
       description: "",
-      origin: [], 
-      sacrificialValue: ""
+      origin: ["natural"], 
+      sacrificialValue: "none"
     },
     specialProperties:  { 
       description: "",
@@ -436,6 +436,117 @@ function Item_Creator_Menu() {
       specialReactionEffect: ""
     }
   })
+
+  const [imageFile, setImageFile] = useState(null);
+
+  function handleAddSection(sectionType) {
+    if (sectionType === "Reaction") {
+      const currentReactants = draftItem.alchemicalProperties?.reactsWith || [];
+      const currentReactions = draftItem.alchemicalProperties?.reactions || [];
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties, 
+          reactsWith: [...currentReactants, ""],
+          reactions: [...currentReactions, ""]
+        }
+      });
+    }
+    else if (sectionType === "Uses") {
+      const currentUses = draftItem.alchemicalProperties?.uses || [];
+      const currentEffects = draftItem.alchemicalProperties?.effects || [];
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties, 
+          uses: [...currentUses, ""],
+          effects: [...currentEffects, ""]
+        }
+      });
+    }
+    
+  }
+
+  function handleRemoveSection(index, sectionType) {
+    if (sectionType === "Reaction") {
+      const currentReactants = draftItem.alchemicalProperties?.reactsWith || [];
+      const currentReactions = draftItem.alchemicalProperties?.reactions || [];
+
+      let newReactants = currentReactants.filter(
+        (reactant, i) => i !== index
+      );
+
+      let newReactions = currentReactions.filter(
+        (reaction, i) => i !== index
+      );
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties, 
+          reactsWith: newReactants,
+          reactions: newReactions
+        }
+      });
+    } 
+    else if (sectionType === "Uses") {
+      const currentUses = draftItem.alchemicalProperties?.uses || [];
+      const currentEffects = draftItem.alchemicalProperties?.effects || [];
+
+      let newUses = currentUses.filter(
+        (use, i) => i !== index
+      );
+
+      let newEffects = currentEffects.filter(
+        (effect, i) => i !== index
+      );
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties, 
+          uses: newUses,
+          effects: newEffects
+        }
+      });
+    }  
+  }
+
+  function handleUpdateRow(index, fieldType, newValue, sectionType) {
+    if (sectionType === "Reaction") {
+      const targetArrayName = fieldType === 'reactant' ? 'reactsWith' : 'reactions';
+      const currentArray = draftItem.alchemicalProperties[targetArrayName] || [];
+      const copyOfArray = [...currentArray];
+
+      copyOfArray[index] = (newValue);
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties,
+          [targetArrayName]: copyOfArray
+        }
+      })
+    }
+    else if (sectionType === "Uses") {
+      const targetArrayName = fieldType === 'use' ? 'uses' : 'effects';
+      const currentArray = draftItem.alchemicalProperties[targetArrayName] || [];
+      const copyOfArray = [...currentArray];
+
+      copyOfArray[index] = (newValue);
+
+      setDraftItem({
+        ...draftItem,
+        alchemicalProperties: {
+          ...draftItem.alchemicalProperties,
+          [targetArrayName]: copyOfArray
+        }
+      })
+    }
+    
+  }
 
   function handleToggleAffinity(clickedAffinity) {
     const isSpell = Object.hasOwn(spellAffinityIcons, clickedAffinity);
@@ -475,45 +586,467 @@ function Item_Creator_Menu() {
     });
   }
 
+  async function handleSubmitItem() {
+    let finalItemData = {...draftItem};
+
+    if (imageFile) {
+      const uniqueFileName = `${Date.now()}-${imageFile.name}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('item-images')
+        .upload(uniqueFileName, imageFile);
+
+      if (uploadError) {
+        console.error("Failed to upload image: ", uploadError);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('item-images')
+        .getPublicUrl(uniqueFileName);
+
+      finalItemData.image = publicUrlData.publicUrl;
+    }
+
+    const { data, error } = await supabase
+      .from('items')
+      .insert([finalItemData])
+      .select()
+
+    if (error) {
+      console.error("Error saving item to database:", error);
+    } else {
+      console.log("Successfully forged new item!", data);
+
+    setImageFile(null);
+    }
+  }
+
   return (
     <div className="menu-container">
       <h2>Forge a New Item</h2>
 
-      {/* A standard text field */}
       <div className="field-group">
         <label>Item Title:</label>
         <input 
           type="text" 
           value={draftItem.title} 
           onChange={(e) => setDraftItem({ 
-            ...draftItem, // Keep the description, image, and stats exactly as they are...
-            title: e.target.value // ...but overwrite the title with what I just typed!
+            ...draftItem,
+            title: e.target.value
           })} 
         />
       </div>
 
-      {/* A dropdown menu for nested objects */}
+      <div className="field-group">
+        <label>Item Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.description} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            description: e.target.value
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Image:</label>
+        <input
+          type="file"
+          accept="image/png, image/jpg, image/webp"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              setImageFile(e.target.files[0]);
+            }
+          }}
+        />
+        {imageFile && (
+          <div style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>Image Preview:</p>
+            <img 
+              src={URL.createObjectURL(imageFile)} 
+              alt="Preview" 
+              style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', border: '2px solid #4b5563' }} 
+            />
+          </div>
+        )}
+      </div>
+
       <div className="field-group">
         <label>Rarity:</label>
         <select 
           value={draftItem.stats.rarity} 
           onChange={(e) => setDraftItem({
-            ...draftItem, // Keep the top-level stuff (title, description)...
+            ...draftItem, 
             stats: {
-              ...draftItem.stats, // Keep the other stats (form, material)...
-              rarity: e.target.value // ...but update the rarity!
+              ...draftItem.stats, 
+              rarity: e.target.value 
             }
           })}
         >
           <option value="Common">Common</option>
           <option value="Uncommon">Uncommon</option>
           <option value="Rare">Rare</option>
-          <option value="Iconic">Iconic</option>
+          <option value="Unique-Minor">Unique</option>
+          <option value="Unique-Major">Iconic</option>
 
         </select>
       </div>
 
-      {/* To see your object updating in real-time while you type! */}
+      <div className="field-group">
+        <label>Form:</label>
+        <select 
+          value={draftItem.stats.form} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            stats: {
+              ...draftItem.stats, 
+              form: e.target.value 
+            }
+          })}
+        >
+          <option value="Solid">Solid</option>
+          <option value="Liquid">Liquid</option>
+          <option value="Gas">Gas</option>
+          <option value="Textile">Textile</option>
+          <option value="Small-Pieces">Small-Pieces</option>
+          <option value="Powder">Powder</option>          
+
+        </select>
+      </div>
+
+      <div className="field-group">
+        <label>Material:</label>
+        <select 
+          value={draftItem.stats.material} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            stats: {
+              ...draftItem.stats, 
+              material: e.target.value 
+            }
+          })}
+        >
+          <option value="Wood">Wood</option>
+          <option value="Metal">Metal</option>
+          <option value="Stone">Stone</option>
+          <option value="Organic">Organic</option>
+          <option value="Fluid">Fluid</option>
+          <option value="Ceramic">Ceramic</option>
+          <option value="Abberant">Abberant</option>
+          <option value="Other">Other</option>
+
+        </select>
+      </div>
+
+      <div className="field-group">
+        <label>Durability:</label>
+        <select 
+          value={draftItem.stats.durability} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            stats: {
+              ...draftItem.stats, 
+              durability: e.target.value 
+            }
+          })}
+        >
+          <option value="poor">Poor</option>
+          <option value="mediocre">Mediocre</option>
+          <option value="good">Good</option>
+          <option value="great">Great</option>
+          <option value="excellent">Excellent</option>
+          <option value="indestructable">Indestructable</option>
+
+        </select>
+      </div>
+
+      <h4>Magical Properties</h4>
+      <div className="field-group">
+        <label>Magical Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.magicalProperties.description} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            magicalProperties: {
+              ...draftItem.magicalProperties,
+              description: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Affinities:</label>
+        
+        <div className="icon-grid" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {Object.keys(damageAffinityIcons).map((affinityName) => {
+            
+            const isSelected = draftItem.magicalProperties.damageAffinities?.includes(affinityName);
+
+            return (
+              <img 
+                key={affinityName}
+                src={damageAffinityIcons[affinityName]} 
+                alt={affinityName}
+                onClick={() => handleToggleAffinity(affinityName)}
+                
+                style={{ 
+                  width: '40px', 
+                  cursor: 'pointer',
+                  opacity: isSelected ? 1 : 0.4,
+                  border: isSelected ? '2px solid #922610' : '2px solid transparent',
+                  borderRadius: '8px'
+                }}
+              />
+            );
+          })}
+          {Object.keys(spellAffinityIcons).map((affinityName) => {
+            
+            const isSelected = draftItem.magicalProperties.damageAffinities?.includes(affinityName);
+
+            return (
+              <img 
+                key={affinityName}
+                src={spellAffinityIcons[affinityName]} 
+                alt={affinityName}
+                onClick={() => handleToggleAffinity(affinityName)}
+                
+                style={{ 
+                  width: '40px', 
+                  cursor: 'pointer',
+                  opacity: isSelected ? 1 : 0.4,
+                  border: isSelected ? '2px solid #922610' : '2px solid transparent',
+                  borderRadius: '8px'
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <h4>Alchemical Properties</h4>
+      <div className="field-group">
+        <label>Alchemical Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.alchemicalProperties.description} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            alchemicalProperties: {
+              ...draftItem.alchemicalProperties,
+              description: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Dissolves In:</label>
+        <select 
+          value={draftItem.alchemicalProperties.dissolvesIn} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            alchemicalProperties: {
+              ...draftItem.alchemicalProperties, 
+              dissolvesIn: [ e.target.value ]
+            }
+          })}
+        >
+          <option value="water">Water</option>
+          <option value="alcohol">Alcohol</option>
+          <option value="vinegar">Vinegar</option>
+          <option value="oil">Oil</option>
+          <option value="blood">Blood</option>
+
+        </select>
+      </div>
+
+      <div className="field-group">
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <label>Alchemical Reactions:</label>
+          <button type="button" onClick={() => handleAddSection("Reaction")}>
+            + Add Reaction
+          </button>
+        </div>
+
+        {draftItem.alchemicalProperties?.reactsWith?.map((reactantString, index) => {
+          
+          const matchingReactionString = draftItem.alchemicalProperties.reactions[index];
+
+          return (
+            <div key={index} style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+              
+              <input 
+                type="text" 
+                placeholder="Reaction caused by..."
+                value={reactantString} 
+                onChange={(e) => handleUpdateRow(index, 'reactant', e.target.value, "Reaction")}
+              />
+
+              <input 
+                type="text" 
+                placeholder="Reaction effect..."
+                value={matchingReactionString}
+                onChange={(e) => handleUpdateRow(index, 'reaction', e.target.value, "Reaction")}
+              />
+
+              <button type="button" onClick={() => handleRemoveSection(index, "Reaction")}>
+                - Remove
+              </button>
+              
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="field-group">
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <label>Alchemical Uses:</label>
+          <button type="button" onClick={() => handleAddSection("Uses")}>
+            + Add Use
+          </button>
+        </div>
+
+        {draftItem.alchemicalProperties?.uses?.map((useString, index) => {
+          
+          const matchingUseString = draftItem.alchemicalProperties.effects[index];
+
+          return (
+            <div key={index} style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+              
+              <input 
+                type="text" 
+                placeholder="Kind of Use"
+                value={useString} 
+                onChange={(e) => handleUpdateRow(index, 'use', e.target.value, "Uses")}
+              />
+
+              <input 
+                type="text" 
+                placeholder="Use effect..."
+                value={matchingUseString}
+                onChange={(e) => handleUpdateRow(index, 'effect', e.target.value, "Uses")}
+              />
+
+              <button type="button" onClick={() => handleRemoveSection(index, "Uses")}>
+                - Remove
+              </button>
+              
+            </div>
+          );
+        })}
+      </div>
+
+      <h4>Spiritual Properties</h4>
+      <div className="field-group">
+        <label>Spiritual Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.spiritualProperties.description} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            spiritualProperties: {
+              ...draftItem.spiritualProperties,
+              description: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Origin:</label>
+        <select 
+          value={draftItem.spiritualProperties.origin} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            spiritualProperties: {
+              ...draftItem.spiritualProperties, 
+              origin: [ e.target.value ]
+            }
+          })}
+        >
+          <option value="natural">Natural</option>
+          <option value="artificial">Artificial</option>
+          <option value="demonic">Demonic</option>
+          <option value="spiritual">Spiritual</option>
+
+        </select>
+      </div>
+
+      <div className="field-group">
+        <label>Sacrificial Value:</label>
+        <select 
+          value={draftItem.spiritualProperties.sacrificialValue} 
+          onChange={(e) => setDraftItem({
+            ...draftItem, 
+            spiritualProperties: {
+              ...draftItem.spiritualProperties, 
+              sacrificialValue: e.target.value
+            }
+          })}
+        >
+          <option value="none">None</option>
+          <option value="minor">Minor</option>
+          <option value="moderate">Moderate</option>
+          <option value="high">High</option>
+          <option value="extreme">Extreme</option>
+
+        </select>
+      </div>
+
+      <h4>Special Properties</h4>
+      <div className="field-group">
+        <label>Special Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.specialProperties.description} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            specialProperties: {
+              ...draftItem.specialProperties,
+              description: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Special Reaction Description:</label>
+        <input 
+          type="text" 
+          value={draftItem.specialProperties.specialReactionDescription} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            specialProperties: {
+              ...draftItem.specialProperties,
+              specialReactionDescription: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Special Reaction Effect:</label>
+        <input 
+          type="text" 
+          value={draftItem.specialProperties.specialReactionEffect} 
+          onChange={(e) => setDraftItem({ 
+            ...draftItem,
+            specialProperties: {
+              ...draftItem.specialProperties,
+              specialReactionEffect: e.target.value
+            }
+          })} 
+        />
+      </div>
+
+      <button onClick={handleSubmitItem}>
+        Submit
+      </button>
+
       <pre>{JSON.stringify(draftItem, null, 2)}</pre>
     </div>
   );
