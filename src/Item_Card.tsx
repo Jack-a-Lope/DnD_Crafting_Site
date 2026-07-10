@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { supabase } from './supabaseClient.js'
+import React, { useEffect, useState, useRef } from 'react'
+import { supabase } from './supabaseClient'
 import './Item_Card.css'
 import parchmentImg from './assets/parchment.png';
 
@@ -53,10 +53,10 @@ const DUMMY_DATA = [
 
 const RARITY_BACKGROUNDS = {
   "Common": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(243,244,246,0.85) 100%)", 
-  "Uncommon": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(220,252,231,0.85) 100%)", 
-  "Rare": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(219,234,254,0.85) 100%)", 
-  "Unique-Minor": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(248,199,254,0.85) 100%)",
-  "Unique-Major": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(254,243,199,0.85) 100%)",
+  "Uncommon": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(220, 255, 232, 0.85) 100%)", 
+  "Rare": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(209, 229, 255, 0.85) 100%)", 
+  "Unique-Minor": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(248, 197, 255, 0.85) 100%)",
+  "Unique-Major": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255, 196, 128, 0.85) 100%)",
 };
 
 const spellAffinityIcons = {
@@ -86,7 +86,27 @@ const damageAffinityIcons = {
   "Slashing": "icons/slashing.svg",
 };
 
-function Card( {item} ) {
+function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.Dispatch<React.SetStateAction<Item[]>>; toggleEditMenu: (item: Item) => void }) {
+
+  async function handleDeleteItem() {
+    const { data, error } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', item.id)
+      .select()
+
+    if (error) {
+      console.error("Error deleting item from database:", error);
+    } else {
+      console.log("Successfully destroyed item!", data);
+      console.log(item.id);
+      setItems((prevItems) => prevItems.filter((existingItem) => existingItem.id !== item.id));
+    }
+  }
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  }
 
   const[isExpanded, setIsExpanded] = useState(false);
   const[magicalPropertiesExpanded, setMagicalPropertiesExpanded] = useState(false);
@@ -95,7 +115,7 @@ function Card( {item} ) {
   const[specialPropertiesExpanded, setSpecialPropertiesExpanded] = useState(false);
 
 
-  const overlayGradient = RARITY_BACKGROUNDS[item.stats.rarity] || 'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)';
+  const overlayGradient = RARITY_BACKGROUNDS[item.stats.rarity as keyof typeof RARITY_BACKGROUNDS] || 'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)';
   const textureImage= `url('${parchmentImg}')`;
   return (
     <article
@@ -120,6 +140,13 @@ function Card( {item} ) {
           </h2>
           <p className="card-description" style={{ fontFamily: 'bookmania, serif', }}>{item.description}</p>
         </div>
+          <img onClick={(e) => {toggleEditMenu(item); handleButtonClick(e)}} src="\icons\editIcon.png" className='menu-btn-icon'/>
+        <div>
+        </div>
+            <img onClick={(e) => {handleDeleteItem(); handleButtonClick(e)}} src="\icons\trashIcon.png" className='menu-btn-icon'/>
+        <div>
+
+        </div>
       </div>
       <div className="card-subcontent">
           <div className="card-subsections-wrapper">
@@ -136,12 +163,12 @@ function Card( {item} ) {
                     <div className="subsection-hidden-inner">
                       <div className="subsection-hidden-content">
                         {item.magicalProperties.description}
-                        {item.magicalProperties.spellAffinities && (
+                          {item.magicalProperties.spellAffinities && (
                           <div className="affinities-container">
                             Spell Affinities:  
-                            {item.magicalProperties.spellAffinities.map((affinity, index) => (
+                            {item.magicalProperties.spellAffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
                               <div key={index} className="tooltip-container">
-                                <img key={index} src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
                                 <span className="tooltip-text">{affinity}</span>
                               </div>
                             ))}
@@ -150,9 +177,9 @@ function Card( {item} ) {
                         {item.magicalProperties.damageAffinities && (
                           <div className="affinities-container">
                             Damage Affinities: 
-                            {item.magicalProperties.damageAffinities.map((affinity, index) => (
+                            {item.magicalProperties.damageAffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
                               <div key={index} className="tooltip-container">
-                                <img key={index} src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                <img src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
                                 <span className="tooltip-text">{affinity}</span>
                               </div>
                             ))}
@@ -161,9 +188,9 @@ function Card( {item} ) {
                         {item.magicalProperties.spellDisaffinities && (
                           <div className="affinities-container">
                             Spell Disaffinities:  
-                            {item.magicalProperties.spellDisaffinities.map((affinity, index) => (
+                            {item.magicalProperties.spellDisaffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
                               <div key={index} className="tooltip-container">
-                                <img key={index} src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
                                 <span className="tooltip-text">{affinity}</span>
                               </div>
                             ))}
@@ -172,7 +199,7 @@ function Card( {item} ) {
                         {item.magicalProperties.damageDisaffinities && (
                           <div className="affinities-container">
                             Damage Disaffinities: 
-                            {item.magicalProperties.damageDisaffinities.map((affinity, index) => (
+                            {item.magicalProperties.damageDisaffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
                               <div key={index} className="tooltip-container">
                                 <img key={index} src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
                                 <span className="tooltip-text">{affinity}</span>
@@ -197,7 +224,7 @@ function Card( {item} ) {
                         {item.alchemicalProperties.description}
                         {item.alchemicalProperties.dissolvesIn && item.alchemicalProperties.dissolvesIn.length > 0 && (
                         <div>
-                          Dissolves in: {item.alchemicalProperties.dissolvesIn.map((solvent, index) => (
+                          Dissolves in: {item.alchemicalProperties.dissolvesIn.map((solvent: string, index: number) => (
                               <span key={index} style={{fontStyle: 'italic'}}>
                               {solvent}
                               {index < item.alchemicalProperties.dissolvesIn.length - 1 ? ', ' : ''}
@@ -206,7 +233,7 @@ function Card( {item} ) {
                         </div>)}
                         {item.alchemicalProperties.reactsWith && item.alchemicalProperties.reactsWith.length > 0 && (
                         <div>
-                          Reacts with: {item.alchemicalProperties.reactsWith.map((reactant, index) => {
+                          Reacts with: {item.alchemicalProperties.reactsWith.map((reactant: string, index: number) => {
                             const correspondingReaction = item.alchemicalProperties.reactions[index];
                       
                           return (
@@ -223,7 +250,7 @@ function Card( {item} ) {
                         </div>)}
                         {item.alchemicalProperties.uses && item.alchemicalProperties.uses.length > 0 && (
                         <div>
-                          Uses: {item.alchemicalProperties.uses.map((use, index) => {
+                          Uses: {item.alchemicalProperties.uses.map((use: string, index: number) => {
                             const correspondingEffect = item.alchemicalProperties.effects[index];
                       
                           return (
@@ -256,7 +283,7 @@ function Card( {item} ) {
                         {item.spiritualProperties.description}
                         {item.spiritualProperties.origin && item.spiritualProperties.origin.length > 0 && (
                         <div>
-                          Origin: {item.spiritualProperties.origin.map((origin, index) => {                      
+                          Origin: {item.spiritualProperties.origin.map((origin: string, index: number) => {                      
                           return (
                               <span key={index}>
                                   <span style={{fontStyle: 'italic'}}> 
@@ -328,9 +355,23 @@ function Card( {item} ) {
 function Item_List() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createMenu, setCreateMenu] = useState(false);
+  const [editMenu, setEditMenu] = useState(false);
+  const [editItem, setEditItem] = useState<Item>();
 
-  useEffect(() => {
-    async function fetchItems() {
+  const toggleCreateMenu = () => {
+    setCreateMenu((cur) => !cur);
+  }
+
+  const toggleEditMenu = (item?: Item) => {
+    setEditMenu((cur) => !cur);
+    if (item) {
+      setEditItem(item);
+    }
+    console.log("toggle edit menu");
+  }
+
+  async function fetchItems() {
       const { data, error } = await supabase.from('items').select('*');
       
       if (error) {
@@ -341,6 +382,8 @@ function Item_List() {
       }
     }
 
+  useEffect(() => {
+    
     fetchItems();
   }, []);
 
@@ -363,10 +406,19 @@ function Item_List() {
   return (
     <>
       <div className="card-container">
+        <button className='menu-btn-submit' onClick={toggleCreateMenu}>
+          Create Item
+        </button>
         {items.map(item => (
-          <Card key={item.id} item={item} />
+          <Card key={item.id} item={item} setItems={setItems} toggleEditMenu={toggleEditMenu} />
         ))}
       </div>
+      {createMenu && (
+        <Item_Creator_Menu mode="create" title="Create a New Item" toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
+      )}
+      {editMenu && (
+        <Item_Creator_Menu editItem={editItem} mode="edit" title="Edit Item" toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
+      )}
     </>
   )
 }
@@ -398,11 +450,47 @@ function Item_Creator() {
   )
 }
 
-function Item_Creator_Menu() {
-  const[draftItem, setDraftItem] = useState({
+function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEditMenu }: { mode:string; title: string; editItem?: Item; toggleCreateMenu?: () => void; toggleEditMenu?: () => void  }) {
+  const[draftItem, setDraftItem] = useState<{
+    title: string;
+    description: string;
+    image: string | null;
+    stats: {
+      rarity: string;
+      form: string;
+      material: string;
+      durability: string;
+    };
+    magicalProperties: {
+      description: string;
+      spellAffinities: string[];
+      damageAffinities: string[];
+      spellDisaffinities: string[];
+      damageDisaffinities: string[];
+    };
+    alchemicalProperties: {
+      description: string;
+      dissolvesIn: string[];
+      reactsWith: string[];
+      reactions: string[];
+      uses: string[];
+      effects: string[];
+    };
+    spiritualProperties: {
+      description: string;
+      origin: string[];
+      sacrificialValue: string;
+    };
+    specialProperties: {
+      description: string;
+      specialTrigger: string[];
+      specialReactionDescription: string;
+      specialReactionEffect: string;
+    };
+  }>({
     title: "",
     description: "",
-    image: "",
+    image: null,
     stats: {
       rarity: "common",
       form: "solid",
@@ -419,10 +507,10 @@ function Item_Creator_Menu() {
     alchemicalProperties: {
       description: "",
       dissolvesIn: ["alcohol"], 
-      reactsWith: [],
-      reactions: [], 
-      uses: [], 
-      effects: [], 
+      reactsWith: [""],
+      reactions: [""], 
+      uses: [""], 
+      effects: [""], 
     },
     spiritualProperties: { 
       description: "",
@@ -431,15 +519,16 @@ function Item_Creator_Menu() {
     },
     specialProperties:  { 
       description: "",
-      specialTrigger: [], 
+      specialTrigger: [""], 
       specialReactionDescription: "",
       specialReactionEffect: ""
     }
   })
 
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  function handleAddSection(sectionType) {
+  function handleAddSection(sectionType: string) {
     if (sectionType === "Reaction") {
       const currentReactants = draftItem.alchemicalProperties?.reactsWith || [];
       const currentReactions = draftItem.alchemicalProperties?.reactions || [];
@@ -469,7 +558,7 @@ function Item_Creator_Menu() {
     
   }
 
-  function handleRemoveSection(index, sectionType) {
+  function handleRemoveSection(index: number, sectionType: string) {
     if (sectionType === "Reaction") {
       const currentReactants = draftItem.alchemicalProperties?.reactsWith || [];
       const currentReactions = draftItem.alchemicalProperties?.reactions || [];
@@ -514,7 +603,7 @@ function Item_Creator_Menu() {
     }  
   }
 
-  function handleUpdateRow(index, fieldType, newValue, sectionType) {
+  function handleUpdateRow(index: number, fieldType: string, newValue: string, sectionType: string) {
     if (sectionType === "Reaction") {
       const targetArrayName = fieldType === 'reactant' ? 'reactsWith' : 'reactions';
       const currentArray = draftItem.alchemicalProperties[targetArrayName] || [];
@@ -548,13 +637,13 @@ function Item_Creator_Menu() {
     
   }
 
-  function handleToggleAffinity(clickedAffinity) {
+  function handleToggleAffinity(clickedAffinity: string) {
     const isSpell = Object.hasOwn(spellAffinityIcons, clickedAffinity);
     const affKey = isSpell ? "spellAffinities" : "damageAffinities";
     const disKey = isSpell ? "spellDisaffinities" : "damageDisaffinities";
 
-    const currentAffinities = draftItem.magicalProperties[affKey] || [];
-    const currentDisaffinities = draftItem.magicalProperties[disKey] || [];
+    const currentAffinities: string[] = draftItem.magicalProperties[affKey] || [];
+    const currentDisaffinities: string[] = draftItem.magicalProperties[disKey] || [];
     
     let newAffinities;
     let newDisaffinities;
@@ -622,14 +711,149 @@ function Item_Creator_Menu() {
     }
   }
 
-  return (
-    <div className="menu-container">
-      <h2>Forge a New Item</h2>
+  {/* You were trying to make the update item work. Right now it doesn't and this is where it should go */}
+  async function handleUpdateItem() {
+    let finalItemData = {...draftItem};
 
-      <div className="field-group">
+    if (imageFile) {
+      const uniqueFileName = `${Date.now()}-${imageFile.name}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('item-images')
+        .upload(uniqueFileName, imageFile);
+
+      if (uploadError) {
+        console.error("Failed to upload image: ", uploadError);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('item-images')
+        .getPublicUrl(uniqueFileName);
+
+      finalItemData.image = publicUrlData.publicUrl;
+    }
+
+    if (editItem) {
+      const { data, error } = await supabase
+        .from('items')
+        .update(finalItemData)
+        .eq('id', editItem.id)
+        .select()
+
+      if (error) {
+        console.error("Error saving item to database:", error);
+      } else {
+        console.log("Successfully forged new item!", data);
+
+      setImageFile(null);
+      }
+    }
+    else {
+      console.error("Error saving item to database:", "no edit item");
+      return;
+    }
+  }
+
+  const handleAutoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleBoxClick = () => {
+    fileInputRef.current?.click();
+  }
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  useEffect(() => {
+    if (editItem) {
+      console.log(editItem.title);
+      const tempItem = {
+      title: editItem.title || "",
+      description: editItem.description || "",
+      image: editItem.image || null,
+      stats: {
+        rarity: editItem.stats?.rarity || "common",
+        form: editItem.stats?.form || "solid",
+        material: editItem.stats?.material || "wood",
+        durability: editItem.stats?.durability || "poor"
+      },
+      magicalProperties: {
+        description: editItem.magicalProperties?.description || "",
+        spellAffinities: editItem.magicalProperties?.spellAffinities || [],
+        damageAffinities: editItem.magicalProperties?.damageAffinities || [],
+        spellDisaffinities: editItem.magicalProperties?.spellDisaffinities || [],
+        damageDisaffinities: editItem.magicalProperties?.damageDisaffinities || []
+      },
+      alchemicalProperties: {
+        description: editItem.alchemicalProperties?.description || "",
+        dissolvesIn: editItem.alchemicalProperties?.dissolvesIn || ["alcohol"], 
+        reactsWith: editItem.alchemicalProperties?.reactsWith || [""],
+        reactions: editItem.alchemicalProperties?.reactions || [""], 
+        uses: editItem.alchemicalProperties?.uses || [""], 
+        effects: editItem.alchemicalProperties?.effects || [""], 
+      },
+      spiritualProperties: { 
+        description: editItem.spiritualProperties?.description || "",
+        origin: editItem.spiritualProperties?.origin || ["natural"], 
+        sacrificialValue: editItem.spiritualProperties?.sacrificialValue || "none"
+      },
+      specialProperties:  { 
+        description: editItem.specialProperties?.description || "",
+        specialTrigger: editItem.specialProperties?.specialTrigger || [""], 
+        specialReactionDescription: editItem.specialProperties?.specialReactionDescription || "",
+        specialReactionEffect: editItem.specialProperties?.specialReactionEffect || ""
+      }
+      
+
+    }
+    setDraftItem(tempItem);
+  }
+  }, [])
+  
+  return (
+    <div style={{'padding':'3rem'}}>
+      <div className="menu-background"></div>
+    <div className="menu-container">      
+    <div className="menu-section" style={{'flexDirection':'row', 'justifyContent':'space-between'}}>
+      <h2>{title}</h2>
+      {mode === "create" && (
+        <button className="menu-btn" onClick={(toggleCreateMenu)}>
+          X
+        </button>
+      )}
+      {mode != "create" && (
+        <button className="menu-btn" onClick={(toggleEditMenu)}>
+          X
+        </button>
+      )}
+      
+    </div>
+
+    {/*Basic Properties*/}
+    <div className="menu-section">
+      <div className="menu-row-inline">
         <label>Item Title:</label>
         <input 
-          type="text" 
+          className="small-input"
+          type="text"
+          placeholder='Title'
           value={draftItem.title} 
           onChange={(e) => setDraftItem({ 
             ...draftItem,
@@ -638,44 +862,82 @@ function Item_Creator_Menu() {
         />
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-offline">
         <label>Item Description:</label>
-        <input 
-          type="text" 
-          value={draftItem.description} 
-          onChange={(e) => setDraftItem({ 
-            ...draftItem,
-            description: e.target.value
-          })} 
-        />
-      </div>
+        <div className="menu-row-inline">
+          <textarea 
+            className="dynamic-textarea"
+            placeholder='Item Description'
+            value={draftItem.description} 
+            onChange={(e) =>{ 
+              handleAutoResize(e);
 
-      <div className="field-group">
-        <label>Image:</label>
-        <input
-          type="file"
-          accept="image/png, image/jpg, image/webp"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              setImageFile(e.target.files[0]);
+              setDraftItem({ 
+                ...draftItem,
+                description: e.target.value
+              })} 
             }
-          }}
-        />
-        {imageFile && (
-          <div style={{ marginTop: '1rem' }}>
-            <p style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>Image Preview:</p>
-            <img 
-              src={URL.createObjectURL(imageFile)} 
-              alt="Preview" 
-              style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', border: '2px solid #4b5563' }} 
-            />
-          </div>
-        )}
+          />
+        </div>
+        
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-offline">
+        <label>Image:</label>
+        <div style={{display:'flex', justifyContent: 'right', alignItems: 'right'}}>
+            <input
+              type="file"
+              accept="image/png, image/jpg, image/webp"
+              style={{ display: 'none' }}
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  setImageFile(e.target.files[0]);
+                }
+              }}
+            />
+            <div 
+              onClick={handleBoxClick}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              style={{
+                width: '100px',
+                aspectRatio: 1 / 1,
+                border: isDragging ? '3px dashed #22c55e' : '3px dashed #922610',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                overflow: 'hidden'
+              }}
+            >
+              {imageFile ? (
+              <img 
+                src={URL.createObjectURL(imageFile)} 
+                alt="Preview" 
+                className="menu-img-input" 
+              />
+            ) : (
+              <div style={{ color: '#922610', fontFamily: 'bookmania' }}>
+                <div style={{ fontSize: '5rem', margin:'0', lineHeight: '0.5', paddingTop: '1rem' }}>+</div>
+              </div>
+            )
+            }
+            </div>
+
+        </div>
+        
+        
+      </div>
+
+      <div className="menu-row-inline">
         <label>Rarity:</label>
         <select 
+          className="menu-dropdown"
           value={draftItem.stats.rarity} 
           onChange={(e) => setDraftItem({
             ...draftItem, 
@@ -694,10 +956,11 @@ function Item_Creator_Menu() {
         </select>
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Form:</label>
         <select 
           value={draftItem.stats.form} 
+          className="menu-dropdown"
           onChange={(e) => setDraftItem({
             ...draftItem, 
             stats: {
@@ -716,10 +979,11 @@ function Item_Creator_Menu() {
         </select>
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Material:</label>
         <select 
-          value={draftItem.stats.material} 
+          value={draftItem.stats.material}
+          className='menu-dropdown' 
           onChange={(e) => setDraftItem({
             ...draftItem, 
             stats: {
@@ -740,10 +1004,11 @@ function Item_Creator_Menu() {
         </select>
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Durability:</label>
         <select 
           value={draftItem.stats.durability} 
+          className='menu-dropdown'
           onChange={(e) => setDraftItem({
             ...draftItem, 
             stats: {
@@ -761,91 +1026,117 @@ function Item_Creator_Menu() {
 
         </select>
       </div>
+    </div>
 
+    {/*Magical Properties*/}
+    <div className="menu-section">
       <h4>Magical Properties</h4>
-      <div className="field-group">
+      <div className="menu-row-offline">
         <label>Magical Description:</label>
-        <input 
-          type="text" 
+        <textarea 
+          className="dynamic-textarea"
+          placeholder="Magical Description"
           value={draftItem.magicalProperties.description} 
-          onChange={(e) => setDraftItem({ 
+          onChange={(e) => {
+            handleAutoResize(e);
+            setDraftItem({ 
             ...draftItem,
             magicalProperties: {
               ...draftItem.magicalProperties,
               description: e.target.value
             }
-          })} 
+          })}} 
         />
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-offline">
         <label>Affinities:</label>
         
         <div className="icon-grid" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          {Object.keys(damageAffinityIcons).map((affinityName) => {
+            {(Object.keys(damageAffinityIcons) as (keyof typeof damageAffinityIcons)[]).map((affinityName) => {
             
-            const isSelected = draftItem.magicalProperties.damageAffinities?.includes(affinityName);
+            const isSelected = (draftItem.magicalProperties.damageAffinities as string[] | undefined)?.includes(affinityName);
+            const isDeselected = (draftItem.magicalProperties.damageDisaffinities as string[] | undefined)?.includes(affinityName);
 
             return (
-              <img 
-                key={affinityName}
-                src={damageAffinityIcons[affinityName]} 
-                alt={affinityName}
-                onClick={() => handleToggleAffinity(affinityName)}
-                
-                style={{ 
-                  width: '40px', 
-                  cursor: 'pointer',
-                  opacity: isSelected ? 1 : 0.4,
-                  border: isSelected ? '2px solid #922610' : '2px solid transparent',
-                  borderRadius: '8px'
-                }}
-              />
+              <div className="tooltip-container">
+                <img 
+                  key={affinityName}
+                  src={damageAffinityIcons[affinityName]} 
+                  alt={affinityName}
+                  onClick={() => handleToggleAffinity(affinityName)}
+                  
+                  style={{ 
+                    width: '40px', 
+                    cursor: 'pointer',
+                    padding: '.2rem',
+                    backgroundColor: isSelected ? 'rgb(16, 146, 25, 0.3' : isDeselected ? 'rgb(146, 38, 16, 0.3': 'transparent',
+                    opacity: (isSelected || isDeselected) ? 1 : 0.4,
+                    border: isSelected ? '2px solid #109219' : isDeselected ? '2px solid #922610': '2px solid transparent',
+                    borderRadius: '8px'
+                  }}
+                />
+                <span className="tooltip-text">{affinityName}</span>
+              </div>
+              
             );
           })}
-          {Object.keys(spellAffinityIcons).map((affinityName) => {
+          {(Object.keys(spellAffinityIcons) as (keyof typeof spellAffinityIcons)[]).map((affinityName) => {
             
-            const isSelected = draftItem.magicalProperties.damageAffinities?.includes(affinityName);
+            const isSelected = (draftItem.magicalProperties.spellAffinities as string[] | undefined)?.includes(affinityName);
+            const isDeselected = (draftItem.magicalProperties.spellDisaffinities as string[] | undefined)?.includes(affinityName);
 
             return (
-              <img 
-                key={affinityName}
-                src={spellAffinityIcons[affinityName]} 
-                alt={affinityName}
-                onClick={() => handleToggleAffinity(affinityName)}
-                
-                style={{ 
-                  width: '40px', 
-                  cursor: 'pointer',
-                  opacity: isSelected ? 1 : 0.4,
-                  border: isSelected ? '2px solid #922610' : '2px solid transparent',
-                  borderRadius: '8px'
-                }}
-              />
+              <div className="tooltip-container">
+                <img 
+                  key={affinityName}
+                  src={spellAffinityIcons[affinityName]} 
+                  alt={affinityName}
+                  onClick={() => handleToggleAffinity(affinityName)}
+                  
+                  style={{ 
+                    width: '40px', 
+                    cursor: 'pointer',
+                    padding: '.2rem',
+                    backgroundColor: isSelected ? 'rgb(16, 146, 25, 0.3' : isDeselected ? 'rgb(146, 38, 16, 0.3': 'transparent',
+                    opacity: (isSelected || isDeselected) ? 1 : 0.4,
+                    border: isSelected ? '2px solid #109219' : isDeselected ? '2px solid #922610': '2px solid transparent',
+                    borderRadius: '8px'
+                  }}
+                />
+                <span className="tooltip-text">{affinityName}</span>
+              </div>
             );
           })}
         </div>
       </div>
+    </div>
 
+    {/*Alchemical Properties*/}
+    <div className='menu-section'>
       <h4>Alchemical Properties</h4>
-      <div className="field-group">
+      <div className="menu-row-offline">
         <label>Alchemical Description:</label>
-        <input 
-          type="text" 
+        <textarea 
+          className='dynamic-textarea'
+          placeholder='Alchemical Description'
           value={draftItem.alchemicalProperties.description} 
-          onChange={(e) => setDraftItem({ 
-            ...draftItem,
-            alchemicalProperties: {
-              ...draftItem.alchemicalProperties,
-              description: e.target.value
-            }
-          })} 
+          onChange={(e) => {
+            handleAutoResize(e);
+            setDraftItem({ 
+              ...draftItem,
+              alchemicalProperties: {
+                ...draftItem.alchemicalProperties,
+                description: e.target.value
+              }
+          })}} 
         />
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Dissolves In:</label>
-        <select 
+        <select
+          className="menu-dropdown"
           value={draftItem.alchemicalProperties.dissolvesIn} 
           onChange={(e) => setDraftItem({
             ...draftItem, 
@@ -864,11 +1155,11 @@ function Item_Creator_Menu() {
         </select>
       </div>
 
-      <div className="field-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="menu-row-offline">
+        <div className="menu-row-inline">
           <label>Alchemical Reactions:</label>
-          <button type="button" onClick={() => handleAddSection("Reaction")}>
-            + Add Reaction
+          <button type="button" className="menu-btn" onClick={() => handleAddSection("Reaction")}>
+            +
           </button>
         </div>
 
@@ -881,20 +1172,21 @@ function Item_Creator_Menu() {
               
               <input 
                 type="text" 
+                className="small-input"
                 placeholder="Reaction caused by..."
                 value={reactantString} 
                 onChange={(e) => handleUpdateRow(index, 'reactant', e.target.value, "Reaction")}
               />
 
-              <input 
-                type="text" 
+              <textarea 
+                className="dynamic-textarea"
                 placeholder="Reaction effect..."
                 value={matchingReactionString}
-                onChange={(e) => handleUpdateRow(index, 'reaction', e.target.value, "Reaction")}
+                onChange={(e) => {handleAutoResize(e); handleUpdateRow(index, 'reaction', e.target.value, "Reaction")}}
               />
 
-              <button type="button" onClick={() => handleRemoveSection(index, "Reaction")}>
-                - Remove
+              <button type="button" className="menu-btn" onClick={() => handleRemoveSection(index, "Reaction")}>
+                -
               </button>
               
             </div>
@@ -903,10 +1195,10 @@ function Item_Creator_Menu() {
       </div>
 
       <div className="field-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="menu-row-inline">
           <label>Alchemical Uses:</label>
-          <button type="button" onClick={() => handleAddSection("Uses")}>
-            + Add Use
+          <button type="button" className="menu-btn" onClick={() => handleAddSection("Uses")}>
+            +
           </button>
         </div>
 
@@ -919,47 +1211,55 @@ function Item_Creator_Menu() {
               
               <input 
                 type="text" 
-                placeholder="Kind of Use"
+                className="small-input"
+                placeholder="Used as..."
                 value={useString} 
                 onChange={(e) => handleUpdateRow(index, 'use', e.target.value, "Uses")}
               />
 
-              <input 
-                type="text" 
+              <textarea 
+                className="dynamic-textarea"
                 placeholder="Use effect..."
                 value={matchingUseString}
-                onChange={(e) => handleUpdateRow(index, 'effect', e.target.value, "Uses")}
+                onChange={(e) => {handleAutoResize(e); handleUpdateRow(index, 'effect', e.target.value, "Uses")}}
               />
 
-              <button type="button" onClick={() => handleRemoveSection(index, "Uses")}>
-                - Remove
+              <button type="button" className="menu-btn" onClick={() => handleRemoveSection(index, "Uses")}>
+                -
               </button>
               
             </div>
           );
         })}
       </div>
+    </div>
 
+    {/*Spiritual Properties*/}
+    <div className="menu-section">
       <h4>Spiritual Properties</h4>
-      <div className="field-group">
+      <div className="menu-row-offline">
         <label>Spiritual Description:</label>
-        <input 
-          type="text" 
-          value={draftItem.spiritualProperties.description} 
-          onChange={(e) => setDraftItem({ 
-            ...draftItem,
-            spiritualProperties: {
-              ...draftItem.spiritualProperties,
-              description: e.target.value
-            }
-          })} 
+        <textarea 
+          className='dynamic-textarea'
+          value={draftItem.spiritualProperties.description}
+          placeholder='Spiritual Description' 
+          onChange={(e) =>{ 
+            handleAutoResize(e);
+            setDraftItem({ 
+              ...draftItem,
+              spiritualProperties: {
+                ...draftItem.spiritualProperties,
+                description: e.target.value
+              }
+          })}} 
         />
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Origin:</label>
         <select 
           value={draftItem.spiritualProperties.origin} 
+          className='menu-dropdown'
           onChange={(e) => setDraftItem({
             ...draftItem, 
             spiritualProperties: {
@@ -976,10 +1276,11 @@ function Item_Creator_Menu() {
         </select>
       </div>
 
-      <div className="field-group">
+      <div className="menu-row-inline">
         <label>Sacrificial Value:</label>
         <select 
           value={draftItem.spiritualProperties.sacrificialValue} 
+          className="menu-dropdown"
           onChange={(e) => setDraftItem({
             ...draftItem, 
             spiritualProperties: {
@@ -996,59 +1297,80 @@ function Item_Creator_Menu() {
 
         </select>
       </div>
+    </div>
 
+    {/*Special Properties*/}
+    <div className="menu-section">
       <h4>Special Properties</h4>
-      <div className="field-group">
-        <label>Special Description:</label>
-        <input 
-          type="text" 
-          value={draftItem.specialProperties.description} 
-          onChange={(e) => setDraftItem({ 
+    <div className="menu-row-offline">
+      <label>Special Description:</label>
+      <textarea 
+        className="dynamic-textarea"
+        value={draftItem.specialProperties.description}
+        placeholder='Special Description' 
+        onChange={(e) => {
+          handleAutoResize(e);
+          setDraftItem({ 
             ...draftItem,
             specialProperties: {
               ...draftItem.specialProperties,
               description: e.target.value
             }
-          })} 
-        />
-      </div>
+        })}} 
+      />
+    </div>
 
-      <div className="field-group">
-        <label>Special Reaction Description:</label>
-        <input 
-          type="text" 
-          value={draftItem.specialProperties.specialReactionDescription} 
-          onChange={(e) => setDraftItem({ 
+    <div className="menu-row-offline">
+      <label>Special Reaction Description:</label>
+      <textarea 
+        className="dynamic-textarea" 
+        value={draftItem.specialProperties.specialReactionDescription} 
+        placeholder='Special Reaction Description'
+        onChange={(e) => {
+          handleAutoResize(e);
+          setDraftItem({ 
             ...draftItem,
             specialProperties: {
               ...draftItem.specialProperties,
               specialReactionDescription: e.target.value
             }
-          })} 
-        />
-      </div>
-
-      <div className="field-group">
-        <label>Special Reaction Effect:</label>
-        <input 
-          type="text" 
-          value={draftItem.specialProperties.specialReactionEffect} 
-          onChange={(e) => setDraftItem({ 
-            ...draftItem,
-            specialProperties: {
-              ...draftItem.specialProperties,
-              specialReactionEffect: e.target.value
-            }
-          })} 
-        />
-      </div>
-
-      <button onClick={handleSubmitItem}>
-        Submit
-      </button>
-
-      <pre>{JSON.stringify(draftItem, null, 2)}</pre>
+        })}} 
+      />
     </div>
+
+    <div className="menu-row-offline">
+      <label>Special Reaction Effect:</label>
+        <textarea 
+        className="dynamic-textarea" 
+          value={draftItem.specialProperties.specialReactionEffect} 
+          placeholder='Special Reaction Effect'
+          onChange={(e) => {
+            handleAutoResize(e);
+            setDraftItem({ 
+              ...draftItem,
+              specialProperties: {
+                ...draftItem.specialProperties,
+                specialReactionEffect: e.target.value
+              }
+          })}} 
+        />
+      </div>
+    </div>
+    
+    <button className="menu-btn-submit" onClick={() => {
+      if (mode === "create") {
+        handleSubmitItem;
+      }
+      else {
+        handleUpdateItem;
+      }
+      }}>
+      Submit
+    </button>
+    </div>
+    </div>
+    
+    
   );
 }
 

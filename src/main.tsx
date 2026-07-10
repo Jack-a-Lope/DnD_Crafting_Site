@@ -7,7 +7,5 @@ import {Item_List, Item_Creator, Item_Creator_Menu} from './Item_Card.tsx'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Item_List />
-    <Item_Creator />
-    <Item_Creator_Menu/>
   </StrictMode>,
 )
