@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, Routes, Route } from 'react-router-dom';
-import User_Auth from './User_Auth';
+import { Login, SignUp } from './User_Auth';
 import { useAuth } from './Auth_Context';
 import { Item_List} from './Item_Card';
 import { supabase } from "./supabaseClient.tsx";
@@ -10,10 +10,9 @@ import './App.css'
 
 function NavBar() {
   const {user} = useAuth();
+
   const handleLogOut= async ()=>{
-    //setLoading(true);
     const {error} = await supabase.auth.signOut(user?.email);
-    //setLoading(false);
     if (error) {
       console.log(error);
     }
@@ -25,7 +24,6 @@ function NavBar() {
   return (
     <nav className="header">
       <div className="header-sec">
-        
       </div>
       <div className="header-sec">
         <button className="header-btn" onClick={handleLogOut}>
@@ -39,9 +37,12 @@ function App() {
   const {user, loading} = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-      if (!loading && !user) {
+    if (!loading && !user && location.pathname != '/sign-up') {
         navigate('/');
       }
+    if (user && location.pathname == '/sign-up') {
+      navigate('/item-list');
+    }
     }, [user, navigate]);
 
   return (
@@ -49,7 +50,8 @@ function App() {
       { user && (<NavBar></NavBar>) }
       
       <Routes>
-        <Route path="/" element={<User_Auth />}/>
+        <Route path="/" element={<Login />}/>
+        <Route path="/sign-up" element={<SignUp />}/>
         <Route path="/item-list" element={<Item_List />} />
       </Routes>
     </>

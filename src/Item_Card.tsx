@@ -518,12 +518,15 @@ async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
 }
 
 function Item_List() {
+
   const [items, setItems] = useState<Item[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [createMenu, setCreateMenu] = useState(false);
   const [editMenu, setEditMenu] = useState(false);
   const [editItem, setEditItem] = useState<Item>();
   const {user} = useAuth();
+  const [titleSearch, setTitleSearch] = useState<string>("");
+  const [curItems, setCurItems] = useState<Item[]>();
 
   const toggleCreateMenu = () => {
     setCreateMenu((cur) => !cur);
@@ -545,11 +548,29 @@ function Item_List() {
     if (error) {
       console.error("Error fetching items: ", error);
     } else {
+      console.log("Fetching Data Success");
       setItems(data);
+      setCurItems(data);
+      setCurItems((cur) => cur ? [...cur].sort((a, b) => a.title.localeCompare(b.title)) : cur);
     }
 
     setLoadingItems(false); 
   }
+
+  useEffect(() => {
+    if (!items) {
+      return;
+    }
+    let processedItems = items.filter((_cur) => 
+      _cur.title.toLowerCase().includes(titleSearch.toLowerCase())
+    );
+    processedItems = processedItems.sort((a, b) => 
+      a.title.localeCompare(b.title)
+    );
+    console.log("Set Process Items, ", {processedItems});
+    setCurItems(processedItems);
+  }, [items, titleSearch]);
+
 
   useEffect(() => {
     fetchItems();
@@ -584,13 +605,28 @@ function Item_List() {
     <>
       <div className="background-menu">
         <div className="card-container">
+          <div className="card-search">
+            <input 
+              type="text"
+              className="card-search-bar"
+              placeholder="Search"
+              value = {titleSearch}
+              onChange={(e) => {
+                setTitleSearch(e.target.value);
+                setCurItems(items.filter(
+                  (_cur, _i) => (_cur.title.toLowerCase().includes(e.target.value))
+                ));
+                setCurItems((cur) => cur ? [...cur].sort((a, b) => a.title.localeCompare(b.title)) : cur);
+              }}
+            />
+          </div>
           {user?.id === GMid && (
             <button className='card-add-btn' onClick={toggleCreateMenu}>
               Create Item
             </button>
           )}
-          {items.map(item => (
-            <Card key={item.id} item={item} setItems={setItems} toggleEditMenu={toggleEditMenu} />
+          {curItems?.map(curItems => (
+            <Card key={curItems.id} item={curItems} setItems={setItems} toggleEditMenu={toggleEditMenu} />
           ))}
         </div>
         {createMenu && (

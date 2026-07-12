@@ -318,9 +318,10 @@ body {
 
   width: 100%;
   max-width: 800px;
-  position: absolute;
+  position: fixed;
   z-index: 1000;
   top: 5%;
+  transform: -50% -50%;
   justify-self: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   margin-bottom: 2rem;
@@ -573,4 +574,42 @@ body {
   outline: 2px solid #922610;
   opacity: 1;
   cursor: pointer;
+}
+
+.card-search {
+  background-image: url('./assets/parchment.png');
+  border-radius: 4px;
+  border: 1px solid #aeaeae;
+  outline: 1px solid #aeaeae;
+  outline-offset: -3px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  justify-self: center;
+  align-self: center;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  width: 100%;
+  max-width: 1000px;
+  min-height: 40px;
+  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-search-bar {
+  width: 60%;
+  border-radius: 2px;
+  max-height: 2rem;
+  padding: 0.1rem 0.5rem 0rem 0.5rem;
+  
+  border: 1px solid #aeaeae;
+  background-color: #f9fafb;
+  font-family: 'bookmania', serif;
+  font-size: .875rem;
+}
+
+.card-search-bar:active {
+  border-color:#922610;
 }
