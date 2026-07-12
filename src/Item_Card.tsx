@@ -64,30 +64,30 @@ const RARITY_BACKGROUNDS = {
 };
 
 const spellAffinityIcons = {
-  "Evocation": "icons/evocation.png",
-  "Conjuration": "icons/conjuration.png",
-  "Necromancy": "icons/necromancy.png",
-  "Enchantment": "icons/enchantment.png",
-  "Abjuration": "icons/abjuration.png",
-  "Illusion": "icons/illusion.png",
-  "Divination": "icons/divination.png",
-  "Transmutation": "icons/transmutation.png",
+  "Evocation": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/evocation.png",
+  "Conjuration": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/conjuration.png",
+  "Necromancy": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/necromancy.png",
+  "Enchantment": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/enchantment.png",
+  "Abjuration": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/abjuration.png",
+  "Illusion": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/illusion.png",
+  "Divination": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/divination.png",
+  "Transmutation": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/transmutation.png",
 };
 
 const damageAffinityIcons = {
-  "Fire": "icons/fire.svg",
-  "Lightning": "icons/lightning.svg",
-  "Cold": "icons/cold.svg",
-  "Acid": "icons/acid.svg",
-  "Poison": "icons/poison.svg",
-  "Psychic": "icons/psychic.svg",
-  "Radiant": "icons/radiant.svg",
-  "Necrotic": "icons/necrotic.svg",
-  "Force": "icons/force.svg",
-  "Thunder": "icons/thunder.svg",
-  "Bludgeoning": "icons/bludgeoning.svg",
-  "Piercing": "icons/piercing.svg",
-  "Slashing": "icons/slashing.svg",
+  "Fire": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/fire.svg",
+  "Lightning": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/lightning.svg",
+  "Cold": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/cold.svg",
+  "Acid": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/acid.svg",
+  "Poison": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/poison.svg",
+  "Psychic": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/psychic.svg",
+  "Radiant": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/radiant.svg",
+  "Necrotic": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/necrotic.svg",
+  "Force": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/force.svg",
+  "Thunder": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/thunder.svg",
+  "Bludgeoning": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/bludgeoning.svg",
+  "Piercing": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/piercing.svg",
+  "Slashing": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/slashing.svg",
 };
 
 function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.Dispatch<React.SetStateAction<Item[]>>; toggleEditMenu: (item: Item) => void }) {
