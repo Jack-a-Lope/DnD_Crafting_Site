@@ -503,7 +503,10 @@ async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
                   </>
                 ) : (
                   <section>
-                    <h4 className="hidden-sub-h4">Special Properties:</h4>
+                    {item.specialProperties.description && (
+                      <h4 className="hidden-sub-h4">Special Properties:</h4>
+                      )
+                    }
                   </section>
                 )}
                 
