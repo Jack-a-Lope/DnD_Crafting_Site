@@ -9,7 +9,7 @@ import './App.css'
 
 
 function NavBar() {
-  const {user} = useAuth();
+  const {user, loading} = useAuth();
   const navigate = useNavigate();
   const handleLogOut= async ()=>{
     //setLoading(true);
@@ -37,10 +37,10 @@ function NavBar() {
   )
 }
 function App() {
-  const {user} = useAuth();
+  const {user, loading} = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-      if (!user) {
+      if (!loading && !user) {
         navigate('/');
       }
     }, [user, navigate]);

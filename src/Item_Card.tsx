@@ -145,62 +145,42 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
       specRev: item.sub_sec_visibility.specRev
     }
   })
+async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 'spir' | 'spec') {
+  let keyToUpdate: keyof typeof draftItem.sub_sec_visibility = "magRev";
+  if (section === "mag") keyToUpdate = "magRev";
+  else if (section === "alc") keyToUpdate = "alcRev";
+  else if (section === "spir") keyToUpdate = "spirRev";
+  else if (section === "spec") keyToUpdate = "specRev";
 
-  async function handleSetVisibility(visible: boolean, section: string) {
-    console.log("TARGET ID:", item.id, "| TYPE:", typeof item.id);
-    setDraftItem({ sub_sec_visibility: { ...draftItem.sub_sec_visibility } })
-    const newVisibility = { ...draftItem.sub_sec_visibility };
-    if (section === "mag") {
-      setDraftItem({
-        ...draftItem,
-        sub_sec_visibility: {
-          ...draftItem.sub_sec_visibility,
-          magRev: !draftItem.sub_sec_visibility.magRev
-        }
-      })
-      setMagRev(!magRev);
-    } else if (section == "alc") {
-      setDraftItem({
-        ...draftItem,
-        sub_sec_visibility: {
-          ...draftItem.sub_sec_visibility,
-          alcRev: !draftItem.sub_sec_visibility.alcRev
-        }
-      })
-      setAlcRev(!alcRev);
-    } else if (section == "spir") {
-      setDraftItem({
-        ...draftItem,
-        sub_sec_visibility: {
-          ...draftItem.sub_sec_visibility,
-          spirRev: !draftItem.sub_sec_visibility.spirRev
-        }
-      })
-      setSpirRev(!spirRev);
-    } else if (section == " spec") {
-      setDraftItem({
-        ...draftItem,
-        sub_sec_visibility: {
-          ...draftItem.sub_sec_visibility,
-          specRev: !draftItem.sub_sec_visibility.specRev
-        }
-      })
-      setSpecRev(!specRev);
-    }
+  const newVisibility = {
+    ...draftItem.sub_sec_visibility,
+    [keyToUpdate]: !draftItem.sub_sec_visibility[keyToUpdate]
+  };
 
-    const { data, error } = await supabase
-      .from('items')
-      .update({ sub_sec_visibility: newVisibility })
-      .eq('id', item.id)
-      .select()
+  setDraftItem({ 
+    ...draftItem, 
+    sub_sec_visibility: newVisibility 
+  });
 
-      if (error) {
-        console.error("Error saving item to database:", error);
-      } else {
-        console.log("Successfully updated item!", data);
-      }
-    
+  if (section === "mag") setMagRev(newVisibility.magRev);
+  else if (section === "alc") setAlcRev(newVisibility.alcRev);
+  else if (section === "spir") setSpirRev(newVisibility.spirRev);
+  else if (section === "spec") setSpecRev(newVisibility.specRev);
+
+  console.log("Sending this EXACT data to Supabase:", newVisibility);
+
+  const { data, error } = await supabase
+    .from('items')
+    .update({ sub_sec_visibility: newVisibility })
+    .eq('id', item.id)
+    .select();
+
+  if (error) {
+    console.error("Error saving item to database:", error);
+  } else {
+    console.log("Successfully updated item!", data);
   }
+}
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -490,7 +470,7 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
                         {user?.id === GMid && (
                         <>
                           {specRev ? (
-                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           ) : (
                             <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           )}
@@ -605,7 +585,7 @@ function Item_List() {
 
   return (
     <>
-      <div className="background">
+      <div className="background-menu">
         <div className="card-container">
           {user?.id === GMid && (
             <button className='card-add-btn' onClick={toggleCreateMenu}>

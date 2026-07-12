@@ -13,8 +13,8 @@ body {
   background-color: #f3f4f6;
 }
 
-.background {
-  background-image: linear-gradient(rgba(88, 88, 88, 0.01), rgba(88, 88, 88, 0.01)), url(./public/itemBackground.png);
+.background-menu {
+  background-image: linear-gradient(rgba(88, 88, 88, 0.01), rgba(88, 88, 88, 0.01)), url(https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/itemBackground.jpeg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
