@@ -478,7 +478,7 @@ async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
                         <div className="subsection-hidden-inner">
                           <div className="subsection-hidden-content">
                             {item.specialProperties.description}
-                            {item.specialProperties.specialTrigger && (
+                            {item.specialProperties.specialReactionDescription && (
                               <div>
                                 <div style={{'marginBottom':'1rem'}}>
                                   Special Trigger: { }
@@ -606,6 +606,7 @@ function Item_List() {
       <div className="background-menu">
         <div className="card-container">
           <div className="card-search">
+            <div></div>
             <input 
               type="text"
               className="card-search-bar"

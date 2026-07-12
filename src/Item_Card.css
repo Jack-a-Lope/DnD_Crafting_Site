@@ -18,7 +18,7 @@ body {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  min-height: 200vh;
+  min-height: 100vh;
   margin: 0;
   background-attachment: fixed;
 }
@@ -599,10 +599,11 @@ body {
 }
 
 .card-search-bar {
-  width: 60%;
+  width: 30%;
   border-radius: 2px;
   max-height: 2rem;
   padding: 0.1rem 0.5rem 0rem 0.5rem;
+  margin-right: 5%;
   
   border: 1px solid #aeaeae;
   background-color: #f9fafb;
