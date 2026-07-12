@@ -22,7 +22,7 @@ function User_Auth() {
   const handleSignUp = async ()=>{
     setError("");
     setLoading(true);
-    const {data,error} = await supabase.auth.signUp({email,password});
+    const {error} = await supabase.auth.signUp({email,password});
     setLoading(false);
     if (error) return setError(error.message);
   }
@@ -30,19 +30,11 @@ function User_Auth() {
   const handleLogin = async ()=>{
     setError("");
     setLoading(true);
-    const {data,error} = await supabase.auth.signInWithPassword({email,password});
+    const {error} = await supabase.auth.signInWithPassword({email,password});
     setLoading(false);
     if (error) return setError(error.message);
   }
 
-
-  const handleLogOut= async ()=>{
-    setError("");
-    setLoading(true);
-    const {data,error} = await supabase.auth.signOut({email,password});
-    setLoading(false);
-    if (error) return setError(error.message);
-  }
 
   if (user) return null;
 
