@@ -3,7 +3,7 @@ import { useNavigate, Routes, Route, Link, Outlet } from 'react-router-dom';
 import User_Auth from './User_Auth';
 import { useAuth } from './Auth_Context';
 import { Item_List} from './Item_Card';
-import { supabase } from "./supabaseClient";
+import { supabase } from "./supabaseClient.tsx";
 import './Item_Card.css'
 import './App.css'
 
@@ -13,7 +13,7 @@ function NavBar() {
   const navigate = useNavigate();
   const handleLogOut= async ()=>{
     //setLoading(true);
-    const {data,error} = await supabase.auth.signOut(user?.email, user?.password);
+    const {data,error} = await supabase.auth.signOut(user?.email);
     //setLoading(false);
     if (error) {
       console.log(error);

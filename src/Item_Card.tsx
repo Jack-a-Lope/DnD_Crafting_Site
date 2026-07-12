@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { supabase } from './supabaseClient'
-import User_Auth from './User_Auth';
+import { supabase } from './supabaseClient.tsx'
 import { useAuth } from './Auth_Context';
 import './Item_Card.css'
 import parchmentImg from './assets/parchment.png';
-import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT } from '@supabase/supabase-js';
 
 interface Item {
   id: number;
@@ -145,7 +143,7 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
       specRev: item.sub_sec_visibility.specRev
     }
   })
-async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 'spir' | 'spec') {
+async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
   let keyToUpdate: keyof typeof draftItem.sub_sec_visibility = "magRev";
   if (section === "mag") keyToUpdate = "magRev";
   else if (section === "alc") keyToUpdate = "alcRev";
@@ -196,7 +194,6 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
   const[alcRev, setAlcRev] = useState(item.sub_sec_visibility.alcRev);
   const[spirRev, setSpirRev] = useState(item.sub_sec_visibility.spirRev);
   const[specRev, setSpecRev] = useState(item.sub_sec_visibility.specRev);
-  const[allRev, setAllRev] = useState(false);
 
 
   const overlayGradient = RARITY_BACKGROUNDS[item.stats.rarity as keyof typeof RARITY_BACKGROUNDS] || 'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)';
@@ -247,7 +244,7 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
             <div className="card-subsections-inner">
               <div className="card-subsections-content">
                 {/*Magical Properties*/}
-                {(user?.id === GMid || allRev || magRev ? (
+                {(user?.id === GMid || magRev ? (
                   <section 
                     className={`subsection ${ magicalPropertiesExpanded ? 'expanded' : ''}`}
                     onClick={(e) => {
@@ -259,9 +256,9 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                       {user?.id === GMid && (
                         <>
                           {(magRev) ? (
-                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.magRev, "mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            <img onClick={(e) => {handleSetVisibility("mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           ) : (
-                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.magRev, "mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            <img onClick={(e) => {handleSetVisibility("mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           )}
                         </>
                       )}
@@ -325,7 +322,7 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                   </section>
                 ))}
                 {/*Alchemical Properties*/}
-                {(user?.id === GMid || allRev || alcRev) ? (
+                {(user?.id === GMid  || alcRev) ? (
                   <section 
                     className={`subsection ${ alchemicalPropertiesExpanded ? 'expanded' : ''}`}
                     onClick={(e) => {
@@ -337,9 +334,9 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                       {user?.id === GMid && (
                         <>
                           {alcRev ? (
-                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.alcRev, "alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          <img onClick={(e) => {handleSetVisibility("alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                             ) : (
-                              <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.alcRev, "alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                              <img onClick={(e) => {handleSetVisibility("alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           )}
                         </>
                       )}
@@ -402,7 +399,7 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                   </section>
                 )}
                 {/*Spiritual Properties*/}
-                {(user?.id === GMid || allRev || spirRev) ? (
+                {(user?.id === GMid || spirRev) ? (
                   <section 
                     className={`subsection ${ spiritualPropertiesExpanded ? 'expanded' : ''}`}
                     onClick={(e) => {
@@ -414,9 +411,9 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                       {user?.id === GMid && (
                         <>
                           {spirRev ? (
-                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.spirRev, "spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          <img onClick={(e) => {handleSetVisibility("spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                             ) : (
-                              <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.spirRev, "spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                              <img onClick={(e) => {handleSetVisibility("spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           )}
                         </>
                       )}
@@ -456,7 +453,7 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                   </section>
                 )}
                 {/*Special Properties*/}
-                {(user?.id === GMid || allRev || specRev) ? (
+                {(user?.id === GMid  || specRev) ? (
                   <>
                     {item.specialProperties.description && (
                     <section 
@@ -470,9 +467,9 @@ async function handleSetVisibility(visible: boolean, section: 'mag' | 'alc' | 's
                         {user?.id === GMid && (
                         <>
                           {specRev ? (
-                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            <img onClick={(e) => {handleSetVisibility("spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           ) : (
-                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            <img onClick={(e) => {handleSetVisibility("spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
                           )}
                         </>
                         )}
@@ -749,11 +746,11 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
       const currentReactions = draftItem.alchemicalProperties?.reactions || [];
 
       let newReactants = currentReactants.filter(
-        (reactant, i) => i !== index
+        (_reactant, i) => i !== index
       );
 
       let newReactions = currentReactions.filter(
-        (reaction, i) => i !== index
+        (_reaction, i) => i !== index
       );
 
       setDraftItem({
@@ -770,11 +767,11 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
       const currentEffects = draftItem.alchemicalProperties?.effects || [];
 
       let newUses = currentUses.filter(
-        (use, i) => i !== index
+        (_use, i) => i !== index
       );
 
       let newEffects = currentEffects.filter(
-        (effect, i) => i !== index
+        (_effect, i) => i !== index
       );
 
       setDraftItem({
@@ -866,7 +863,7 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
     if (imageFile) {
       const uniqueFileName = `${Date.now()}-${imageFile.name}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('item-images')
         .upload(uniqueFileName, imageFile);
 
@@ -905,7 +902,7 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
     if (imageFile) {
       const uniqueFileName = `${Date.now()}-${imageFile.name}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('item-images')
         .upload(uniqueFileName, imageFile);
 
@@ -973,9 +970,6 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
       setImageFile(e.dataTransfer.files[0]);
     }
   };
-  const handleButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  }
 
   useEffect(() => {
     if (editItem) {
@@ -1553,7 +1547,7 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
       </div>
     </div>
     
-    <button className="menu-btn-submit" onClick={(e) => {
+    <button className="menu-btn-submit" onClick={() => {
       if (mode === "create") {
         handleSubmitItem();
         toggleCreateMenu?.();
