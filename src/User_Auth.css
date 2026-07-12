@@ -1,0 +1,102 @@
+.background-img {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/itemBackground.jpeg);  background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+    height:100vh;
+    background-attachment: fixed;
+    overflow-y: hidden;
+}
+
+.login-container {
+    width:auto;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 2rem;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    padding-top: 5%;
+}
+
+.login-card {
+    background-image: url('./assets/parchment.png');
+    border-radius: 16px;
+    border: 1px solid #aeaeae;
+    outline: 1px solid #aeaeae;
+    outline-offset: -3px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    max-width: 500px;
+    min-height: 300px;
+    min-width: 400px;
+    gap: 1rem;
+
+    padding: 1.5rem;
+
+
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-card h2 {
+    font-size: 1.7rem;
+    letter-spacing: 0.05em;
+    color: #922610;
+    font-family: modesto-text, serif;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    border-bottom: 1px solid #922610;
+    text-align: center;
+}
+
+.login-card p {
+    outline-offset: 1px;
+    font-family: 'bookmania', serif;
+    font-size: .8rem;
+    text-align: center;
+}
+
+.login-input {
+  width: 80%;
+  border-radius: 8px;
+  max-height: 3rem;
+  padding: 0.1rem 0.5rem 0rem 0.5rem;
+  align-self: center;
+  
+  border: 2px solid #aeaeae;
+  background-color: #f9fafb;
+  outline: 1px solid #aeaeae;
+  outline-offset: 1px;
+  font-family: 'bookmania', serif;
+  font-size: 1.1rem;
+  margin: 0.5rem;
+}
+
+.login-input:focus {
+  outline-color: #922610;
+  border-color: #922610; 
+}
+
+.login-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.login-row-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+}

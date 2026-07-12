@@ -11,16 +11,28 @@ Custom Styles for the Cards and Container for them
 body {
   font-family: -apple-system, system-ui, sans-serif;
   background-color: #f3f4f6;
-  padding: 2rem;
+}
+
+.background {
+  background-image: linear-gradient(rgba(88, 88, 88, 0.01), rgba(88, 88, 88, 0.01)), url(./public/itemBackground.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 200vh;
+  margin: 0;
+  background-attachment: fixed;
 }
 
 .card-container {
+  width:auto;
   display: flex;
   flex-wrap: wrap;
   flex-direction: column;
   gap: 2rem;
   justify-content: center;
   align-items: center;
+  padding-bottom: 2rem;
+  padding-top: 2rem;
 }
 
 .card {
@@ -39,6 +51,39 @@ body {
   max-width: 1000px;
 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-add-btn {
+  margin-top: 2rem;
+  background-image: url('./assets/parchment.png');
+  border-radius: 16px;
+  border: 1px solid #aeaeae;
+  outline: 1px solid #aeaeae;
+  outline-offset: -3px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  max-width: 1000px;
+  min-height: 100px;
+  justify-content: center;
+
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #922610;
+  font-family: modesto-text, serif;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-add-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
 }
 
 .card-first-row {
@@ -122,7 +167,7 @@ body {
 }
 
 .subsection {
-  padding: 0.5rem;
+  padding: 0rem 0.5rem 0rem 0.5rem;
 }
 
 .subsection-hidden-wrapper {
@@ -179,9 +224,27 @@ body {
     letter-spacing: 0.05em;
     color: #922610;
     font-family: modesto-text, serif;
-    margin-bottom: 0.25rem;
     cursor: pointer;
     border-bottom: 1px solid #922610;
+    align-self: center;
+    width: 90%;
+}
+
+.hidden-sub-h4 {
+  font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #aeaeae;
+    font-family: modesto-text, serif;
+    margin-bottom: 1rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    border-bottom: 1px solid #aeaeae;
+    width: 90%;
+}
+
+.hidden-sub-h4:hover {
+  cursor:initial;
 }
 
 .tooltip-container {
@@ -242,6 +305,7 @@ body {
 
 .menu-container {
   background-image: url('./assets/parchment.png');
+  background-attachment: local;
   border-radius: 16px;
   border: 1px solid #aeaeae;
   outline: 1px solid #aeaeae;
@@ -256,10 +320,19 @@ body {
   max-width: 800px;
   position: absolute;
   z-index: 1000;
-  top: 10%;
+  top: 5%;
   justify-self: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   margin-bottom: 2rem;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.menu-container::-webkit-scrollbar {
+  display: none;
 }
 
 .menu-section {
@@ -322,7 +395,6 @@ body {
   cursor: pointer;
   border-bottom: 1px solid #922610;
 }
-
 
 .menu-short-input {
   background-color:#922610

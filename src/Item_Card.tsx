@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { supabase } from './supabaseClient'
+import User_Auth from './User_Auth';
+import { useAuth } from './Auth_Context';
 import './Item_Card.css'
 import parchmentImg from './assets/parchment.png';
+import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT } from '@supabase/supabase-js';
 
 interface Item {
   id: number;
@@ -13,6 +16,7 @@ interface Item {
   alchemicalProperties: any;
   spiritualProperties: any;
   specialProperties?: any;
+  sub_sec_visibility?: any;
 }
 
 const DUMMY_DATA = [
@@ -50,6 +54,8 @@ const DUMMY_DATA = [
   },
 
 ];
+
+const GMid = 'e2e95ba0-6c80-4fb5-b2ec-a0106ed059df';
 
 const RARITY_BACKGROUNDS = {
   "Common": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(243,244,246,0.85) 100%)", 
@@ -104,6 +110,98 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
     }
   }
 
+  async function handleDuplicateItem() {
+
+    const { id, ...duplicate } = item;
+    duplicate.title = duplicate.title
+
+    const { data, error } = await supabase
+      .from('items')
+      .insert(duplicate)
+      .select();
+
+      if (error) {
+        console.error("Failed to insert:", error);
+      } else {
+        console.log("Successfully created!", data);
+        setItems((prevItems) => 
+          [...prevItems, data[0]]
+        );
+      }
+  }
+
+    const[draftItem, setDraftItem] = useState<{
+    sub_sec_visibility: {
+      magRev: boolean;
+      alcRev: boolean;
+      spirRev: boolean;
+      specRev: boolean;
+    };
+  }>({
+    sub_sec_visibility:  { 
+      magRev: item.sub_sec_visibility.magRev,
+      alcRev: item.sub_sec_visibility.alcRev,
+      spirRev: item.sub_sec_visibility.spirRev,
+      specRev: item.sub_sec_visibility.specRev
+    }
+  })
+
+  async function handleSetVisibility(visible: boolean, section: string) {
+    console.log("TARGET ID:", item.id, "| TYPE:", typeof item.id);
+    setDraftItem({ sub_sec_visibility: { ...draftItem.sub_sec_visibility } })
+    const newVisibility = { ...draftItem.sub_sec_visibility };
+    if (section === "mag") {
+      setDraftItem({
+        ...draftItem,
+        sub_sec_visibility: {
+          ...draftItem.sub_sec_visibility,
+          magRev: !draftItem.sub_sec_visibility.magRev
+        }
+      })
+      setMagRev(!magRev);
+    } else if (section == "alc") {
+      setDraftItem({
+        ...draftItem,
+        sub_sec_visibility: {
+          ...draftItem.sub_sec_visibility,
+          alcRev: !draftItem.sub_sec_visibility.alcRev
+        }
+      })
+      setAlcRev(!alcRev);
+    } else if (section == "spir") {
+      setDraftItem({
+        ...draftItem,
+        sub_sec_visibility: {
+          ...draftItem.sub_sec_visibility,
+          spirRev: !draftItem.sub_sec_visibility.spirRev
+        }
+      })
+      setSpirRev(!spirRev);
+    } else if (section == " spec") {
+      setDraftItem({
+        ...draftItem,
+        sub_sec_visibility: {
+          ...draftItem.sub_sec_visibility,
+          specRev: !draftItem.sub_sec_visibility.specRev
+        }
+      })
+      setSpecRev(!specRev);
+    }
+
+    const { data, error } = await supabase
+      .from('items')
+      .update({ sub_sec_visibility: newVisibility })
+      .eq('id', item.id)
+      .select()
+
+      if (error) {
+        console.error("Error saving item to database:", error);
+      } else {
+        console.log("Successfully updated item!", data);
+      }
+    
+  }
+
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   }
@@ -113,6 +211,12 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
   const[alchemicalPropertiesExpanded, setAlchemicalPropertiesExpanded] = useState(false);
   const[spiritualPropertiesExpanded, setSpiritualPropertiesExpanded] = useState(false);
   const[specialPropertiesExpanded, setSpecialPropertiesExpanded] = useState(false);
+  const {user} = useAuth();
+  const[magRev, setMagRev] = useState(item.sub_sec_visibility.magRev);
+  const[alcRev, setAlcRev] = useState(item.sub_sec_visibility.alcRev);
+  const[spirRev, setSpirRev] = useState(item.sub_sec_visibility.spirRev);
+  const[specRev, setSpecRev] = useState(item.sub_sec_visibility.specRev);
+  const[allRev, setAllRev] = useState(false);
 
 
   const overlayGradient = RARITY_BACKGROUNDS[item.stats.rarity as keyof typeof RARITY_BACKGROUNDS] || 'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)';
@@ -124,13 +228,23 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
 
       style={{ backgroundImage: `${overlayGradient}, ${textureImage}` }} 
     >
-      <div className="card-first-row"> 
-        <img src={item.image} 
+      <div className="card-first-row">
+        {item.image != null ? (
+          <img src={item.image} 
           className="card-img" 
           alt={item.title}
 
           onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Image+Unavailable'; }}
         />
+        ) : 
+        <img src={'https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/defaultItemIcon.jpg'} 
+          className="card-img" 
+          alt={item.title}
+
+          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Image+Unavailable'; }}
+        />
+        }
+        
         <div className="card-content">
           <h2 className="card-title" style={{ fontFamily: 'modesto-text, serif', fontWeight: 'bold', fontSize: '1.5rem', color: '#922610' }}>
             {item.title}
@@ -140,205 +254,279 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
           </h2>
           <p className="card-description" style={{ fontFamily: 'bookmania, serif', }}>{item.description}</p>
         </div>
-          <img onClick={(e) => {toggleEditMenu(item); handleButtonClick(e)}} src="\icons\editIcon.png" className='menu-btn-icon'/>
-        <div>
-        </div>
-            <img onClick={(e) => {handleDeleteItem(); handleButtonClick(e)}} src="\icons\trashIcon.png" className='menu-btn-icon'/>
-        <div>
-
-        </div>
+          {user?.id === GMid && (
+            <>
+              <img onClick={(e) => {handleDuplicateItem(); handleButtonClick(e)}} src="\icons\duplicateIcon.png" className='menu-btn-icon'/>
+              <img onClick={(e) => {toggleEditMenu(item); handleButtonClick(e)}} src="\icons\editIcon.png" className='menu-btn-icon'/>
+              <img onClick={(e) => {handleDeleteItem(); handleButtonClick(e)}} src="\icons\trashIcon.png" className='menu-btn-icon'/>
+            </>
+          )}
       </div>
       <div className="card-subcontent">
           <div className="card-subsections-wrapper">
             <div className="card-subsections-inner">
               <div className="card-subsections-content">
-                <section 
-                  className={`subsection ${ magicalPropertiesExpanded ? 'expanded' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMagicalPropertiesExpanded(!magicalPropertiesExpanded);
-                }}>
-                  <h4>Magical Properties:</h4>
-                  <div className="subsection-hidden-wrapper">
-                    <div className="subsection-hidden-inner">
-                      <div className="subsection-hidden-content">
-                        {item.magicalProperties.description}
-                          {item.magicalProperties.spellAffinities && (
-                          <div className="affinities-container">
-                            Spell Affinities:  
-                            {item.magicalProperties.spellAffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
-                              <div key={index} className="tooltip-container">
-                                <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
-                                <span className="tooltip-text">{affinity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {item.magicalProperties.damageAffinities && (
-                          <div className="affinities-container">
-                            Damage Affinities: 
-                            {item.magicalProperties.damageAffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
-                              <div key={index} className="tooltip-container">
-                                <img src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
-                                <span className="tooltip-text">{affinity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {item.magicalProperties.spellDisaffinities && (
-                          <div className="affinities-container">
-                            Spell Disaffinities:  
-                            {item.magicalProperties.spellDisaffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
-                              <div key={index} className="tooltip-container">
-                                <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
-                                <span className="tooltip-text">{affinity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {item.magicalProperties.damageDisaffinities && (
-                          <div className="affinities-container">
-                            Damage Disaffinities: 
-                            {item.magicalProperties.damageDisaffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
-                              <div key={index} className="tooltip-container">
-                                <img key={index} src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
-                                <span className="tooltip-text">{affinity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}                        
-                      </div>
-                    </div>
-                  </div>
-                </section>
-                <section 
-                  className={`subsection ${ alchemicalPropertiesExpanded ? 'expanded' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAlchemicalPropertiesExpanded(!alchemicalPropertiesExpanded);
-                }}>
-                  <h4>Alchemical Properties:</h4>
-                  <div className="subsection-hidden-wrapper">
-                    <div className="subsection-hidden-inner">
-                      <div className="subsection-hidden-content">
-                        {item.alchemicalProperties.description}
-                        {item.alchemicalProperties.dissolvesIn && item.alchemicalProperties.dissolvesIn.length > 0 && (
-                        <div>
-                          Dissolves in: {item.alchemicalProperties.dissolvesIn.map((solvent: string, index: number) => (
-                              <span key={index} style={{fontStyle: 'italic'}}>
-                              {solvent}
-                              {index < item.alchemicalProperties.dissolvesIn.length - 1 ? ', ' : ''}
-                              </span>
-                          ))}
-                        </div>)}
-                        {item.alchemicalProperties.reactsWith && item.alchemicalProperties.reactsWith.length > 0 && (
-                        <div>
-                          Reacts with: {item.alchemicalProperties.reactsWith.map((reactant: string, index: number) => {
-                            const correspondingReaction = item.alchemicalProperties.reactions[index];
-                      
-                          return (
-                              <span key={index}>
-                                <div style={{paddingLeft: '1rem'}}>
-                                  {reactant}: { }
-                                  <span style={{fontStyle: 'italic'}}> 
-                                    {correspondingReaction}
-                                    {index < item.alchemicalProperties.dissolvesIn.length - 1 ? ', ' : ''}
-                                  </span>
-                                </div>
-                              </span>
-                          )})}
-                        </div>)}
-                        {item.alchemicalProperties.uses && item.alchemicalProperties.uses.length > 0 && (
-                        <div>
-                          Uses: {item.alchemicalProperties.uses.map((use: string, index: number) => {
-                            const correspondingEffect = item.alchemicalProperties.effects[index];
-                      
-                          return (
-                              <span key={index}>
-                                <div style={{paddingLeft: '1rem'}}>
-                                  {use}: { }
-                                  <span style={{fontStyle: 'italic'}}> 
-                                    {correspondingEffect}
-                                    {index < item.alchemicalProperties.uses.length - 1 ? ', ' : ''}
-                                  </span>
-                                </div>
-                              </span>
-                          )})}
-                        </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-                <section 
-                  className={`subsection ${ spiritualPropertiesExpanded ? 'expanded' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSpiritualPropertiesExpanded(!spiritualPropertiesExpanded);
-                }}>
-                  <h4>Spiritual Properties:</h4>
-                  <div className="subsection-hidden-wrapper">
-                    <div className="subsection-hidden-inner">
-                      <div className="subsection-hidden-content">
-                        {item.spiritualProperties.description}
-                        {item.spiritualProperties.origin && item.spiritualProperties.origin.length > 0 && (
-                        <div>
-                          Origin: {item.spiritualProperties.origin.map((origin: string, index: number) => {                      
-                          return (
-                              <span key={index}>
-                                  <span style={{fontStyle: 'italic'}}> 
-                                    {origin}
-                                    {index < item.spiritualProperties.origin.length - 1 ? ', ' : ''}
-                                  </span>
-                              </span>
-                          )})}
-                        </div>
-                        )}
-                        {item.spiritualProperties.origin && item.spiritualProperties.origin.length > 0 && (
-                        <div>
-                          Sacrificial Value: { }
-                          <span style={{fontStyle: 'italic'}}>
-                            {item.spiritualProperties.sacrificialValue}
-                          </span>
-                        </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {item.specialProperties.description && (
+                {/*Magical Properties*/}
+                {(user?.id === GMid || allRev || magRev ? (
                   <section 
-                    className={`subsection ${ specialPropertiesExpanded ? 'expanded' : ''}`}
+                    className={`subsection ${ magicalPropertiesExpanded ? 'expanded' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSpecialPropertiesExpanded(!specialPropertiesExpanded);
+                      setMagicalPropertiesExpanded(!magicalPropertiesExpanded);
                   }}>
-                    <h4>Special Properties:</h4>
+                    <div style={{display:'flex', flexDirection:'row', justifyContent:'space-between'}}>
+                      <h4>Magical Properties:</h4>
+                      {user?.id === GMid && (
+                        <>
+                          {(magRev) ? (
+                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.magRev, "mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          ) : (
+                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.magRev, "mag"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          )}
+                        </>
+                      )}
+                      
+                    </div>
                     <div className="subsection-hidden-wrapper">
                       <div className="subsection-hidden-inner">
                         <div className="subsection-hidden-content">
-                          {item.specialProperties.description}
-                          {item.specialProperties.specialTrigger && (
-                            <div>
-                              <div>
-                                Special Trigger: { }
-                                <span style={{fontStyle: 'italic'}}>
-                                  {item.specialProperties.specialReactionDescription}
-                                </span>
-                              </div>
-                              <div>
-                                Effect: { }
-                                <span style={{fontStyle: 'italic'}}>
-                                  {item.specialProperties.specialReactionEffect}
-                                </span>
-                              </div>
-
+                          {item.magicalProperties.description}
+                            {item.magicalProperties.spellAffinities && (
+                            <div className="affinities-container">
+                              Spell Affinities:  
+                              {item.magicalProperties.spellAffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
+                                <div key={index} className="tooltip-container">
+                                  <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                  <span className="tooltip-text">{affinity}</span>
+                                </div>
+                              ))}
                             </div>
-                          )}                         
+                          )}
+                          {item.magicalProperties.damageAffinities && (
+                            <div className="affinities-container">
+                              Damage Affinities: 
+                              {item.magicalProperties.damageAffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
+                                <div key={index} className="tooltip-container">
+                                  <img src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                  <span className="tooltip-text">{affinity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {item.magicalProperties.spellDisaffinities && (
+                            <div className="affinities-container">
+                              Spell Disaffinities:  
+                              {item.magicalProperties.spellDisaffinities.map((affinity: keyof typeof spellAffinityIcons, index: number) => (
+                                <div key={index} className="tooltip-container">
+                                  <img src={spellAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                  <span className="tooltip-text">{affinity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {item.magicalProperties.damageDisaffinities && (
+                            <div className="affinities-container">
+                              Damage Disaffinities: 
+                              {item.magicalProperties.damageDisaffinities.map((affinity: keyof typeof damageAffinityIcons, index: number) => (
+                                <div key={index} className="tooltip-container">
+                                  <img key={index} src={damageAffinityIcons[affinity]} alt={affinity} className="subsection-hidden-img" />
+                                  <span className="tooltip-text">{affinity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}                        
                         </div>
                       </div>
                     </div>
+                  </section>
+                ) : (
+                  <section>
+                    <h4 className="hidden-sub-h4">Magical Properties:</h4>
+                  </section>
+                ))}
+                {/*Alchemical Properties*/}
+                {(user?.id === GMid || allRev || alcRev) ? (
+                  <section 
+                    className={`subsection ${ alchemicalPropertiesExpanded ? 'expanded' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAlchemicalPropertiesExpanded(!alchemicalPropertiesExpanded);
+                  }}>
+                    <div style={{display:'flex', flexDirection:'row', justifyContent:'space-between'}}>
+                      <h4>Alchemical Properties:</h4>
+                      {user?.id === GMid && (
+                        <>
+                          {alcRev ? (
+                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.alcRev, "alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            ) : (
+                              <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.alcRev, "alc"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="subsection-hidden-wrapper">
+                      <div className="subsection-hidden-inner">
+                        <div className="subsection-hidden-content">
+                          {item.alchemicalProperties.description}
+                          {item.alchemicalProperties.dissolvesIn && item.alchemicalProperties.dissolvesIn.length > 0 && (
+                          <div>
+                            Dissolves in: {item.alchemicalProperties.dissolvesIn.map((solvent: string, index: number) => (
+                                <span key={index} style={{fontStyle: 'italic'}}>
+                                {solvent}
+                                {index < item.alchemicalProperties.dissolvesIn.length - 1 ? ', ' : ''}
+                                </span>
+                            ))}
+                          </div>)}
+                          {item.alchemicalProperties.reactsWith && item.alchemicalProperties.reactsWith.length > 0 && (
+                          <div>
+                            Reacts with: {item.alchemicalProperties.reactsWith.map((reactant: string, index: number) => {
+                              const correspondingReaction = item.alchemicalProperties.reactions[index];
+                        
+                            return (
+                                <span key={index}>
+                                  <div style={{paddingLeft: '1rem', 'marginBottom':'1rem'}}>
+                                    {reactant}: { }
+                                    <span style={{fontStyle: 'italic'}}> 
+                                      {correspondingReaction}
+                                      {index < item.alchemicalProperties.dissolvesIn.length - 1 ? ', ' : ''}
+                                    </span>
+                                  </div>
+                                </span>
+                            )})}
+                          </div>)}
+                          {item.alchemicalProperties.uses && item.alchemicalProperties.uses.length > 0 && (
+                          <div>
+                            Uses: {item.alchemicalProperties.uses.map((use: string, index: number) => {
+                              const correspondingEffect = item.alchemicalProperties.effects[index];
+                        
+                            return (
+                                <span key={index}>
+                                  <div style={{paddingLeft: '1rem', marginBottom: '1rem'}}>
+                                    {use}: { }
+                                    <span style={{fontStyle: 'italic'}}> 
+                                      {correspondingEffect}
+                                      {index < item.alchemicalProperties.uses.length - 1 ? ', ' : ''}
+                                    </span>
+                                  </div>
+                                </span>
+                            )})}
+                          </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                ) : (
+                  <section>
+                    <h4 className="hidden-sub-h4">Alchemical Properties:</h4>
+                  </section>
+                )}
+                {/*Spiritual Properties*/}
+                {(user?.id === GMid || allRev || spirRev) ? (
+                  <section 
+                    className={`subsection ${ spiritualPropertiesExpanded ? 'expanded' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSpiritualPropertiesExpanded(!spiritualPropertiesExpanded);
+                  }}>
+                    <div style={{display:'flex', flexDirection:'row', justifyContent:'space-between'}}>
+                      <h4>Spiritual Properties:</h4>
+                      {user?.id === GMid && (
+                        <>
+                          {spirRev ? (
+                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.spirRev, "spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                            ) : (
+                              <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.spirRev, "spir"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="subsection-hidden-wrapper">
+                      <div className="subsection-hidden-inner">
+                        <div className="subsection-hidden-content">
+                          {item.spiritualProperties.description}
+                          {item.spiritualProperties.origin && item.spiritualProperties.origin.length > 0 && (
+                          <div>
+                            Origin: {item.spiritualProperties.origin.map((origin: string, index: number) => {                      
+                            return (
+                                <span key={index}>
+                                    <span style={{fontStyle: 'italic'}}> 
+                                      {origin}
+                                      {index < item.spiritualProperties.origin.length - 1 ? ', ' : ''}
+                                    </span>
+                                </span>
+                            )})}
+                          </div>
+                          )}
+                          {item.spiritualProperties.origin && item.spiritualProperties.origin.length > 0 && (
+                          <div>
+                            Sacrificial Value: { }
+                            <span style={{fontStyle: 'italic'}}>
+                              {item.spiritualProperties.sacrificialValue}
+                            </span>
+                          </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                ) : (
+                  <section>
+                    <h4 className="hidden-sub-h4">Spiritual Properties:</h4>
+                  </section>
+                )}
+                {/*Special Properties*/}
+                {(user?.id === GMid || allRev || specRev) ? (
+                  <>
+                    {item.specialProperties.description && (
+                    <section 
+                      className={`subsection ${ specialPropertiesExpanded ? 'expanded' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSpecialPropertiesExpanded(!specialPropertiesExpanded);
+                    }}>
+                      <div style={{display:'flex', flexDirection:'row', justifyContent:'space-between'}}>
+                        <h4>Special Properties:</h4>
+                        {user?.id === GMid && (
+                        <>
+                          {specRev ? (
+                          <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/visibleIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          ) : (
+                            <img onClick={(e) => {handleSetVisibility(!item.sub_sec_visibility.specRev, "spec"); handleButtonClick(e)}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/hiddenIcon.png" className='menu-btn-icon' style={{alignSelf:"top"}}/>
+                          )}
+                        </>
+                        )}
+                      </div>
+                      <div className="subsection-hidden-wrapper">
+                        <div className="subsection-hidden-inner">
+                          <div className="subsection-hidden-content">
+                            {item.specialProperties.description}
+                            {item.specialProperties.specialTrigger && (
+                              <div>
+                                <div style={{'marginBottom':'1rem'}}>
+                                  Special Trigger: { }
+                                  <span style={{fontStyle: 'italic'}}>
+                                    {item.specialProperties.specialReactionDescription}
+                                  </span>
+                                </div>
+                                <div>
+                                  Effect: { }
+                                  <span style={{fontStyle: 'italic'}}>
+                                    {item.specialProperties.specialReactionEffect}
+                                  </span>
+                                </div>
+
+                              </div>
+                            )}                         
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                    )}
+                  </>
+                ) : (
+                  <section>
+                    <h4 className="hidden-sub-h4">Special Properties:</h4>
                   </section>
                 )}
                 
@@ -354,10 +542,11 @@ function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.
 
 function Item_List() {
   const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(true);
   const [createMenu, setCreateMenu] = useState(false);
   const [editMenu, setEditMenu] = useState(false);
   const [editItem, setEditItem] = useState<Item>();
+  const {user} = useAuth();
 
   const toggleCreateMenu = () => {
     setCreateMenu((cur) => !cur);
@@ -372,25 +561,36 @@ function Item_List() {
   }
 
   async function fetchItems() {
-      const { data, error } = await supabase.from('items').select('*');
-      
-      if (error) {
-        console.error("Error fetching items: ", error);
-      } else {
-        setItems(data);
-        setLoading(false);
-      }
+    setLoadingItems(true); 
+
+    const { data, error } = await supabase.from('items').select('*');
+    
+    if (error) {
+      console.error("Error fetching items: ", error);
+    } else {
+      setItems(data);
     }
 
+    setLoadingItems(false); 
+  }
+
   useEffect(() => {
-    
     fetchItems();
   }, []);
 
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '2rem' }}>
-      Loading Items ...
-    </p>;
+  if (loadingItems) {
+    return (
+      <>
+        <div className="background">
+          <div className="card-container">
+            <button className="card-add-btn">
+              Loading...
+            </button>
+          </div>
+        </div>
+      
+      </>
+    );
   }
 
   if (items.length === 0) {
@@ -405,20 +605,25 @@ function Item_List() {
 
   return (
     <>
-      <div className="card-container">
-        <button className='menu-btn-submit' onClick={toggleCreateMenu}>
-          Create Item
-        </button>
-        {items.map(item => (
-          <Card key={item.id} item={item} setItems={setItems} toggleEditMenu={toggleEditMenu} />
-        ))}
+      <div className="background">
+        <div className="card-container">
+          {user?.id === GMid && (
+            <button className='card-add-btn' onClick={toggleCreateMenu}>
+              Create Item
+            </button>
+          )}
+          {items.map(item => (
+            <Card key={item.id} item={item} setItems={setItems} toggleEditMenu={toggleEditMenu} />
+          ))}
+        </div>
+        {createMenu && (
+          <Item_Creator_Menu mode="create" title="Create a New Item" setItems={setItems} toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
+        )}
+        {editMenu && (
+          <Item_Creator_Menu editItem={editItem} mode="edit" title="Edit Item" setItems={setItems} toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
+        )}
       </div>
-      {createMenu && (
-        <Item_Creator_Menu mode="create" title="Create a New Item" toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
-      )}
-      {editMenu && (
-        <Item_Creator_Menu editItem={editItem} mode="edit" title="Edit Item" toggleCreateMenu={toggleCreateMenu} toggleEditMenu={toggleEditMenu}/>
-      )}
+      
     </>
   )
 }
@@ -450,7 +655,7 @@ function Item_Creator() {
   )
 }
 
-function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEditMenu }: { mode:string; title: string; editItem?: Item; toggleCreateMenu?: () => void; toggleEditMenu?: () => void  }) {
+function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, toggleEditMenu }: { mode:string; title: string; editItem?: Item; setItems: React.Dispatch<React.SetStateAction<Item[]>>; toggleCreateMenu?: () => void; toggleEditMenu?: () => void  }) {
   const[draftItem, setDraftItem] = useState<{
     title: string;
     description: string;
@@ -706,13 +911,15 @@ function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEdit
       console.error("Error saving item to database:", error);
     } else {
       console.log("Successfully forged new item!", data);
-
-    setImageFile(null);
+      setImageFile(null);
+      setItems((prevItems) => 
+        [...prevItems, data[0]]
+      );
     }
   }
 
-  {/* You were trying to make the update item work. Right now it doesn't and this is where it should go */}
   async function handleUpdateItem() {
+    console.log("Handle log item 2");
     let finalItemData = {...draftItem};
 
     if (imageFile) {
@@ -735,6 +942,7 @@ function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEdit
     }
 
     if (editItem) {
+      console.log("TARGET ID:", editItem.id, "| TYPE:", typeof editItem.id);
       const { data, error } = await supabase
         .from('items')
         .update(finalItemData)
@@ -744,9 +952,14 @@ function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEdit
       if (error) {
         console.error("Error saving item to database:", error);
       } else {
-        console.log("Successfully forged new item!", data);
+        console.log("Successfully updated item!", data);
+        setImageFile(null);
+        setItems((prevItems) => 
+          prevItems.map((existingItem) => 
+            existingItem.id === editItem.id ? data[0] : existingItem
+          )
+        );
 
-      setImageFile(null);
       }
     }
     else {
@@ -780,6 +993,9 @@ function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEdit
       setImageFile(e.dataTransfer.files[0]);
     }
   };
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  }
 
   useEffect(() => {
     if (editItem) {
@@ -1357,12 +1573,14 @@ function Item_Creator_Menu({ mode, title, editItem, toggleCreateMenu, toggleEdit
       </div>
     </div>
     
-    <button className="menu-btn-submit" onClick={() => {
+    <button className="menu-btn-submit" onClick={(e) => {
       if (mode === "create") {
-        handleSubmitItem;
+        handleSubmitItem();
+        toggleCreateMenu?.();
       }
       else {
-        handleUpdateItem;
+        handleUpdateItem();
+        toggleEditMenu?.();
       }
       }}>
       Submit
