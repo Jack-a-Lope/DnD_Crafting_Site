@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Routes, Route, Link, Outlet } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate, Routes, Route } from 'react-router-dom';
 import User_Auth from './User_Auth';
 import { useAuth } from './Auth_Context';
 import { Item_List} from './Item_Card';
@@ -9,11 +9,10 @@ import './App.css'
 
 
 function NavBar() {
-  const {user, loading} = useAuth();
-  const navigate = useNavigate();
+  const {user} = useAuth();
   const handleLogOut= async ()=>{
     //setLoading(true);
-    const {data,error} = await supabase.auth.signOut(user?.email);
+    const {error} = await supabase.auth.signOut(user?.email);
     //setLoading(false);
     if (error) {
       console.log(error);
