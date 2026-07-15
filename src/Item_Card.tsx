@@ -1376,11 +1376,13 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
             }
           })}
         >
+          <option value="none">None</option>
           <option value="water">Water</option>
           <option value="alcohol">Alcohol</option>
           <option value="vinegar">Vinegar</option>
           <option value="oil">Oil</option>
           <option value="blood">Blood</option>
+          <option value="acid">Acid</option>
 
         </select>
       </div>
