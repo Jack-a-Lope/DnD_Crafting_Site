@@ -10,17 +10,7 @@ Custom Styles for the Cards and Container for them
 
 body {
   font-family: -apple-system, system-ui, sans-serif;
-  background-color: #f3f4f6;
-}
-
-.background-menu {
-  background-image: linear-gradient(rgba(88, 88, 88, 0.01), rgba(88, 88, 88, 0.01)), url(https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/itemBackground.jpeg);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  min-height: 100vh;
-  margin: 0;
-  background-attachment: fixed;
+  background-color: #9e735a;
 }
 
 .card-container {
@@ -33,6 +23,10 @@ body {
   align-items: center;
   padding-bottom: 2rem;
   padding-top: 2rem;
+}
+
+.card-container.condensed {
+  gap: 0.1rem;
 }
 
 .card {
@@ -51,6 +45,35 @@ body {
   max-width: 1000px;
 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.condensed {
+  border-radius: 4px;
+  padding: 0;
+}
+
+.card-content h2 {
+  font-family: modesto-text serif;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #922610;
+}
+
+.card-first-row.condensed {
+  padding: .1rem;
+}
+
+.card-content.condensed {
+  padding: .2rem;
+}
+
+.card-content.condensed h2 {
+  font-size: 1rem;
+  padding-top: .4rem;
+}
+
+.card.condensed:hover {
+  transform: translateY(0px)
 }
 
 .card-add-btn {
@@ -84,6 +107,16 @@ body {
   transform: translateY(-5px);
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;
+}
+
+.card-add-btn.condensed {
+  min-height: 48px;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+.card-add-btn.condensed:hover {
+  transform: translateY(0px);
 }
 
 .card-first-row {
@@ -501,6 +534,20 @@ body {
   padding-top: .6rem;
 }
 
+.menu-btn-icon.search {
+  width: 1.875rem;
+  height: 1.875rem;
+  background-color: #a99467;
+  border-color: transparent;
+  outline-color: transparent;
+}
+
+.menu-btn-icon.search:hover {
+  background-color: #80704e;
+  border-color: transparent;
+  outline-color: transparent;
+}
+
 .menu-btn:hover {
   border: 2px solid #922610;
   outline: 1px solid #922610;
@@ -576,6 +623,11 @@ body {
   cursor: pointer;
 }
 
+.menu-btn-icon.condensed:hover {
+  outline-color: transparent;
+  border-color: transparent;
+}
+
 .card-search {
   background-image: url('./assets/parchment.png');
   border-radius: 4px;
@@ -588,14 +640,24 @@ body {
   align-self: center;
 
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-
+  flex-direction: column;
   width: 100%;
   max-width: 1000px;
   min-height: 40px;
+  max-height: 48px;
   padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, max-height 0.4s ease-in-out;
+}
+
+.card-search.expanded {
+  max-height: 1000px;
+}
+
+.card-search-subsec {
+  display: flex;
+  width: 95%;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .card-search-bar {
@@ -613,4 +675,85 @@ body {
 
 .card-search-bar:active {
   border-color:#922610;
+}
+
+.card-search-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.filter-sec {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.filter-sec h2 {
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: #922610;
+  font-family: modesto-text, serif;
+  margin-bottom: 0.4rem;
+}
+
+.filter-sec h3 {
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: #922610;
+  font-family: modesto-text, serif;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid #922610;
+  cursor: pointer;
+}
+
+.filter-sec h4 {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  color: #922610;
+  font-family: modesto-text, serif;
+  margin-bottom: 0.25rem;
+}
+
+.filter-sec p {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  color: #4b5563;
+  font-family: bookmania, serif;
+  margin-bottom: 0.25rem;
+}
+
+.filter-sec-btn-row {
+  padding-left: .2rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-sec-text-btn {
+  display: flex;
+  background-color: #a994676c;
+  align-items: center;
+  justify-content: center;
+  padding: .4rem .4rem 0rem .4rem;
+  margin: 0 .4rem;
+  width: auto;
+  line-height: 1;
+  border-radius: 16px;
+}
+
+.filter-sec-text-btn:hover {
+  cursor: pointer;
+}
+
+.filter-sec-text-btn.pro {
+    background-color: #a99467d6;
+}
+
+.filter-sec-text-btn.con {
+    background-color: #a9676796;
+    color: #ffffff;
 }

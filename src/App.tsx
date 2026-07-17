@@ -49,11 +49,20 @@ function App() {
     <>
       { user && (<NavBar></NavBar>) }
       
-      <Routes>
-        <Route path="/" element={<Login />}/>
-        <Route path="/sign-up" element={<SignUp />}/>
-        <Route path="/item-list" element={<Item_List />} />
-      </Routes>
+      <div  style={{  backgroundImage: "linear-gradient(rgba(88, 88, 88, 0.01), rgba(88, 88, 88, 0.01)), url(https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/itemBackground.jpeg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        minHeight: "100vh",
+        margin: "0",
+        backgroundAttachment: "fixed"
+      }}>
+        <Routes>
+          <Route path="/" element={<Login />}/>
+          <Route path="/sign-up" element={<SignUp />}/>
+          <Route path="/item-list" element={<Item_List />} />
+        </Routes>
+      </div>
     </>
   )
 }

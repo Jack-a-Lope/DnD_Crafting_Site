@@ -17,6 +17,48 @@ interface Item {
   sub_sec_visibility?: any;
 }
 
+interface FilterRule {
+  category: keyof Item;
+  property: string;
+  searchTerm: string;
+  status?: boolean;
+}
+
+{/* Hard Coded Filters - Why you need to make the database better and easier to customize */}
+
+{/*Rarity*/}
+const commonFilter: FilterRule = { category: "stats", property: "rarity", searchTerm: "common"}
+const uncommonFilter: FilterRule = { category: "stats", property: "rarity", searchTerm: "uncommon"}
+const rareFilter: FilterRule = { category: "stats", property: "rarity", searchTerm: "rare"}
+const uniqueFilter: FilterRule = { category: "stats", property: "rarity", searchTerm: "unique"}
+const iconicFitler: FilterRule = { category: "stats", property: "rarity", searchTerm: "iconic"}
+
+{/*Form*/}
+const solidFilter: FilterRule = { category: "stats", property: "form", searchTerm: "solid"}
+const liquidFilter: FilterRule = { category: "stats", property: "form", searchTerm: "liquid"}
+const gasFilter: FilterRule = { category: "stats", property: "form", searchTerm: "gas"}
+
+{/* Material */}
+const woodFilter: FilterRule = { category: "stats", property: "material", searchTerm: "wood"}
+const metalFilter: FilterRule = { category: "stats", property: "material", searchTerm: "metal"}
+const stoneFilter: FilterRule = { category: "stats", property: "material", searchTerm: "stone"}
+const organicFilter: FilterRule = { category: "stats", property: "material", searchTerm: "organic"}
+const fluidFilter: FilterRule = { category: "stats", property: "material", searchTerm: "fluid"}
+const ceramicFilter: FilterRule = { category: "stats", property: "material", searchTerm: "ceramic"}
+const abberantFilter: FilterRule = { category: "stats", property: "material", searchTerm: "abberant"}
+const textileFilter: FilterRule = { category: "stats", property: "material", searchTerm: "textile"}
+const powderFilter: FilterRule = { category: "stats", property: "material", searchTerm: "powder"}
+const otherFilter: FilterRule = { category: "stats", property: "material", searchTerm: "other"}
+
+{/* Durability */}
+const poorDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "poor"}
+const mediocreDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "mediocre"}
+const goodDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "good"}
+const greatDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "great"}
+const excellentDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "excellent"}
+const indestructableDurabilityFilter: FilterRule = { category: "stats", property: "durability", searchTerm: "indestructable"}
+
+
 const DUMMY_DATA = [
   {
     title: "Soul-Sprout Barnacles",
@@ -59,8 +101,8 @@ const RARITY_BACKGROUNDS = {
   "Common": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(243,244,246,0.85) 100%)", 
   "Uncommon": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(220, 255, 232, 0.85) 100%)", 
   "Rare": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(209, 229, 255, 0.85) 100%)", 
-  "Unique-Minor": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(248, 197, 255, 0.85) 100%)",
-  "Unique-Major": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255, 196, 128, 0.85) 100%)",
+  "Unique": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(248, 197, 255, 0.85) 100%)",
+  "Iconic": "linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255, 196, 128, 0.85) 100%)",
 };
 
 const spellAffinityIcons = {
@@ -90,7 +132,7 @@ const damageAffinityIcons = {
   "Slashing": "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/slashing.svg",
 };
 
-function Card({ item, setItems, toggleEditMenu }: { item: Item; setItems: React.Dispatch<React.SetStateAction<Item[]>>; toggleEditMenu: (item: Item) => void }) {
+function Card({ item, isCondensed, setItems, toggleEditMenu }: { item: Item; isCondensed: boolean; setItems: React.Dispatch<React.SetStateAction<Item[]>>; toggleEditMenu: (item: Item) => void }) {
 
   async function handleDeleteItem() {
     const { data, error } = await supabase
@@ -200,13 +242,15 @@ async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
   const textureImage= `url('${parchmentImg}')`;
   return (
     <article
-      className={`card ${isExpanded ? 'expanded' : ''}`}
+      className={(isCondensed && !isExpanded) ? "card condensed": (`card ${isExpanded ? 'expanded' : ''}`)}
       onClick={() => setIsExpanded(!isExpanded)}
 
       style={{ backgroundImage: `${overlayGradient}, ${textureImage}` }} 
     >
-      <div className="card-first-row">
-        {item.image != null ? (
+      <div className={(isCondensed && !isExpanded) ? "card-first-row condensed" : "card-first-row"}>
+        {(isCondensed && !isExpanded) ? (
+          <div/>
+        ) : item.image != null ? (
           <img src={item.image} 
           className="card-img" 
           alt={item.title}
@@ -222,20 +266,24 @@ async function handleSetVisibility( section: 'mag' | 'alc' | 'spir' | 'spec') {
         />
         }
         
-        <div className="card-content">
-          <h2 className="card-title" style={{ fontFamily: 'modesto-text, serif', fontWeight: 'bold', fontSize: '1.5rem', color: '#922610' }}>
+        <div className={(isCondensed && !isExpanded) ? "card-content condensed" : "card-content"}>
+          <h2 className="card-title">
             {item.title}
           </h2>
-          <h2 className="card-title" style={{ fontFamily: 'mrs-eaves, serif', fontStyle: 'italic', fontWeight: 'bold', fontSize: '0.9rem', color: '#4b5563' }}>
-            {item.stats.rarity} | Structure: {item.stats.form} - {item.stats.material} | Durability: {item.stats.durability}
-          </h2>
-          <p className="card-description" style={{ fontFamily: 'bookmania, serif', }}>{item.description}</p>
+          {!(isCondensed && !isExpanded) ? (
+            <>
+              <h2 className="card-title" style={{ fontFamily: 'mrs-eaves, serif', fontStyle: 'italic', fontWeight: 'bold', fontSize: '0.9rem', color: '#4b5563' }}>
+                {item.stats.rarity} | Structure: {item.stats.form} - {item.stats.material} | Durability: {item.stats.durability}
+              </h2>
+              <p className="card-description" style={{ fontFamily: 'bookmania, serif', }}>{item.description}</p> 
+            </>
+          ) : (<div/>)}
         </div>
           {user?.id === GMid && (
             <>
-              <img onClick={(e) => {handleDuplicateItem(); handleButtonClick(e)}} src="\icons\duplicateIcon.png" className='menu-btn-icon'/>
-              <img onClick={(e) => {toggleEditMenu(item); handleButtonClick(e)}} src="\icons\editIcon.png" className='menu-btn-icon'/>
-              <img onClick={(e) => {handleDeleteItem(); handleButtonClick(e)}} src="\icons\trashIcon.png" className='menu-btn-icon'/>
+              <img onClick={(e) => {handleDuplicateItem(); handleButtonClick(e)}} src="\icons\duplicateIcon.png" className={(isCondensed && !isExpanded) ? 'menu-btn-icon condensed' : 'menu-btn-icon'}/>
+              <img onClick={(e) => {toggleEditMenu(item); handleButtonClick(e)}} src="\icons\editIcon.png" className={(isCondensed && !isExpanded) ? 'menu-btn-icon condensed' : 'menu-btn-icon'}/>
+              <img onClick={(e) => {handleDeleteItem(); handleButtonClick(e)}} src="\icons\trashIcon.png" className={(isCondensed && !isExpanded) ? 'menu-btn-icon condensed' : 'menu-btn-icon'}/>
             </>
           )}
       </div>
@@ -530,6 +578,11 @@ function Item_List() {
   const {user} = useAuth();
   const [titleSearch, setTitleSearch] = useState<string>("");
   const [curItems, setCurItems] = useState<Item[]>();
+  const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
+  const [status, setStatus] = useState<boolean>(true);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isCondensed, setIsCondensed] = useState<boolean>(true);
+
 
   const toggleCreateMenu = () => {
     setCreateMenu((cur) => !cur);
@@ -560,6 +613,8 @@ function Item_List() {
     setLoadingItems(false); 
   }
 
+
+  //Searching and filtering
   useEffect(() => {
     if (!items) {
       return;
@@ -567,13 +622,82 @@ function Item_List() {
     let processedItems = items.filter((_cur) => 
       _cur.title.toLowerCase().includes(titleSearch.toLowerCase())
     );
+    processedItems = processedItems.filter((_cur) => {
+      if (activeFilters.length === 0) {
+        return true
+      }
+      return activeFilters.every((rule) => {
+        const parentCat = _cur[rule.category] as any;
+        const rawVal = parentCat?.[rule.property];
+
+        if (rawVal === null || rawVal === undefined) {
+          return rule.status === false;
+        }
+        const searchStr = String(rule.searchTerm).trim().toLowerCase();
+        let isMatch = false;
+
+        if (Array.isArray(rawVal)) {
+          isMatch = rawVal.some((item) => String(item).toLowerCase() === searchStr);
+        } 
+        else if (rule.category === "stats" || rule.category === "spiritualProperties") {
+          isMatch = String(rawVal).toLowerCase() === searchStr;
+        } 
+        else {
+          isMatch = String(rawVal).toLowerCase().includes(searchStr);
+        }
+
+        if (rule.status === false) {
+          return !isMatch;
+        } else {
+          return isMatch;
+        }
+      })
+    }
+    )
     processedItems = processedItems.sort((a, b) => 
       a.title.localeCompare(b.title)
     );
     console.log("Set Process Items, ", {processedItems});
     setCurItems(processedItems);
-  }, [items, titleSearch]);
+  }, [items, titleSearch, activeFilters, status]);
 
+  function handleToggleFilter(clickedFilter: FilterRule) {
+    const filterFor = activeFilters.some((filter) => {
+      return (
+        filter.category === clickedFilter.category &&
+        filter.property === clickedFilter.property &&
+        filter.searchTerm === clickedFilter.searchTerm
+      );
+    })
+
+    console.log(clickedFilter.status);
+    if (filterFor) {
+      if (clickedFilter.status) {
+        clickedFilter.status = false;
+        console.log("Filter Set to False");
+        console.log("filter status: ", clickedFilter.status);
+      }
+      else {
+        console.log("Removed Filter");
+        clickedFilter.status = undefined;
+        setActiveFilters((cur) =>
+          cur.filter((filter) => {
+            return (
+              filter.category !== clickedFilter.category ||
+              filter.property !== clickedFilter.property ||
+              filter.searchTerm !== clickedFilter.searchTerm
+            );
+          })
+        );
+      }
+    }
+    else {
+      console.log("Filter Set to True");
+      setActiveFilters((cur) => [...cur, clickedFilter]);
+      clickedFilter.status = true;
+    }
+    setStatus(!status);
+  }
 
   useEffect(() => {
     fetchItems();
@@ -607,30 +731,266 @@ function Item_List() {
   return (
     <>
       <div className="background-menu">
-        <div className="card-container">
-          <div className="card-search">
-            <div></div>
-            <input 
-              type="text"
-              className="card-search-bar"
-              placeholder="Search"
-              value = {titleSearch}
-              onChange={(e) => {
-                setTitleSearch(e.target.value);
-                setCurItems(items.filter(
-                  (_cur, _i) => (_cur.title.toLowerCase().includes(e.target.value))
-                ));
-                setCurItems((cur) => cur ? [...cur].sort((a, b) => a.title.localeCompare(b.title)) : cur);
-              }}
-            />
+        <div className={!isCondensed ? "card-container" : "card-container condensed"}>
+            <div className={isExpanded ? "card-search expanded" : "card-search"}>
+              <div style={{display:'flex', flexDirection:'row', width: '100%'}}>
+                <div className="card-search-subsec">
+                  <div style={{display:"flex", gap:"1rem"}}>
+                    <img className="menu-btn-icon search" onClick={() => {(fetchItems())}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/ReloadIcon.png" />
+                    <img className="menu-btn-icon search" onClick={() => {(setIsCondensed(!isCondensed))}} src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/listIcon.png" />
+                  </div>
+                  <input 
+                    type="text"
+                    className="card-search-bar"
+                    placeholder="Search"
+                    value = {titleSearch}
+                    onChange={(e) => {
+                      setTitleSearch(e.target.value);
+                    }}
+                  />
+                </div>
+                <img className="menu-btn-icon search" src={!isExpanded ? "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/downIcon.png" : "https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/upIcon.png"}
+                  onClick={() => {
+                    setIsExpanded(!isExpanded);
+                  }}
+                />
+              </div>
+            <div style={{borderBottom:'2px solid', borderBottomColor:'#922610', padding:'0.5rem', marginBottom:'.5rem'}}></div>
+            <div className="filter-sec">
+              <h2>Filter by:</h2>
+              <div style={{padding:".2rem"}}>
+                <h3>Basic Properties:</h3>
+                  {/* Rarity */}
+                  <div style={{padding:".2rem", marginTop:".5rem", display:"flex", flexDirection:"row"}}>
+                    <h4>Rarity: </h4>
+                    <div className="filter-sec-btn-row">
+                      {}
+                      <div className={(commonFilter.status != null && commonFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (commonFilter.status != null && commonFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(commonFilter);
+                        }}>
+                        <p>Common</p>
+                      </div>
+                      <div className={(uncommonFilter.status != null && uncommonFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (uncommonFilter.status != null && uncommonFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(uncommonFilter);
+                        }}>
+                        <p>Uncommon</p>
+                      </div>
+                      <div className={(rareFilter.status != null && rareFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (rareFilter.status != null && rareFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(rareFilter);
+                        }}>
+                        <p>Rare</p>
+                      </div>
+                      <div className={(uniqueFilter.status != null && uniqueFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (uniqueFilter.status != null && uniqueFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(uniqueFilter);
+                        }}>
+                        <p>Unique</p>
+                      </div>
+                      <div className={(iconicFitler.status != null && iconicFitler.status === true) 
+                          ? "filter-sec-text-btn pro" : (iconicFitler.status != null && iconicFitler.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(iconicFitler);
+                        }}>
+                        <p>Iconic</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Form */}
+                  <div style={{padding:".2rem", marginTop:".5rem", display:"flex", flexDirection:"row"}}>
+                    <h4>Form: </h4>
+                    <div className="filter-sec-btn-row">
+                      <div className={(solidFilter.status != null && solidFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (solidFilter.status != null && solidFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(solidFilter);
+                        }}>
+                        <p>Solid</p>
+                      </div>
+                      <div className={(liquidFilter.status != null && liquidFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (liquidFilter.status != null && liquidFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}  
+                        onClick={() => {
+                          handleToggleFilter(liquidFilter);
+                        }}>
+                        <p>Liquid</p>
+                      </div>
+                      <div className={(gasFilter.status != null && gasFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (gasFilter.status != null && gasFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}  
+                        onClick={() => {
+                          handleToggleFilter(gasFilter);
+                        }}>
+                        <p>Gas</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Material */}
+                  <div style={{padding:".2rem", marginTop:".5rem", display:"flex", flexDirection:"row"}}>
+                    <h4>Material: </h4>
+                    <div className="filter-sec-btn-row">
+                      <div className={(woodFilter.status != null && woodFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (woodFilter.status != null && woodFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(woodFilter);
+                        }}>
+                        <p>Wood</p>
+                      </div>
+                      <div className={(metalFilter.status != null && metalFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (metalFilter.status != null && metalFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(metalFilter);
+                        }}>
+                        <p>Metal</p>
+                      </div>
+                      <div className={(stoneFilter.status != null && stoneFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (stoneFilter.status != null && stoneFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}  
+                        onClick={() => {
+                          handleToggleFilter(stoneFilter);
+                        }}>
+                        <p>Stone</p>
+                      </div>
+                      <div className={(organicFilter.status != null && organicFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (organicFilter.status != null && organicFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}  
+                        onClick={() => {
+                          handleToggleFilter(organicFilter);
+                        }}>
+                        <p>Organic</p>
+                      </div>
+                      <div className={(fluidFilter.status != null && fluidFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (fluidFilter.status != null && fluidFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(fluidFilter);
+                        }}>
+                        <p>Fluid</p>
+                      </div>
+                      <div className={(ceramicFilter.status != null && ceramicFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (ceramicFilter.status != null && ceramicFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(ceramicFilter);
+                        }}>
+                        <p>Ceramic</p>
+                      </div>
+                      <div className={(abberantFilter.status != null && abberantFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (abberantFilter.status != null && abberantFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(abberantFilter);
+                        }}>
+                        <p>Aberant</p>
+                      </div>
+                      <div className={(textileFilter.status != null && textileFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (textileFilter.status != null && textileFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(textileFilter);
+                        }}>
+                        <p>Textile</p>
+                      </div>
+                      <div className={(powderFilter.status != null && powderFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (powderFilter.status != null && powderFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(powderFilter);
+                        }}>
+                        <p>Powder</p>
+                      </div>
+                      <div className={(otherFilter.status != null && otherFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (otherFilter.status != null && otherFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(otherFilter);
+                        }}>
+                        <p>Other</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Durability */}
+                  <div style={{padding:".2rem", marginTop:".5rem", display:"flex", flexDirection:"row"}}>
+                    <h4>Durability: </h4>
+                    <div className="filter-sec-btn-row">
+                      <div className={(poorDurabilityFilter.status != null && poorDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (poorDurabilityFilter.status != null && poorDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(poorDurabilityFilter);
+                        }}>
+                        <p>Poor</p>
+                      </div>
+                      <div className={(mediocreDurabilityFilter.status != null && mediocreDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (mediocreDurabilityFilter.status != null && mediocreDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(mediocreDurabilityFilter);
+                        }}>
+                        <p>Mediocre</p>
+                      </div>
+                      <div className={(goodDurabilityFilter.status != null && goodDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (goodDurabilityFilter.status != null && goodDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(goodDurabilityFilter);
+                        }}>
+                        <p>Good</p>
+                      </div>
+                      <div className={(greatDurabilityFilter.status != null && greatDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (greatDurabilityFilter.status != null && greatDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(greatDurabilityFilter);
+                        }}>
+                        <p>Great</p>
+                      </div>
+                      <div className={(excellentDurabilityFilter.status != null && excellentDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (excellentDurabilityFilter.status != null && excellentDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"} 
+                        onClick={() => {
+                          handleToggleFilter(excellentDurabilityFilter);
+                        }}>
+                        <p>Excellent</p>
+                      </div>
+                      <div className={(indestructableDurabilityFilter.status != null && indestructableDurabilityFilter.status === true) 
+                          ? "filter-sec-text-btn pro" : (indestructableDurabilityFilter.status != null && indestructableDurabilityFilter.status === false) 
+                          ? "filter-sec-text-btn con" : "filter-sec-text-btn"}
+                        onClick={() => {
+                          handleToggleFilter(indestructableDurabilityFilter);
+                        }}>
+                        <p>Indestructable</p>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+
+
           </div>
+
+
           {user?.id === GMid && (
-            <button className='card-add-btn' onClick={toggleCreateMenu}>
+            <button className={isCondensed ? 'card-add-btn condensed': 'card-add-btn'} onClick={toggleCreateMenu}>
               Create Item
             </button>
           )}
           {curItems?.map(curItems => (
-            <Card key={curItems.id} item={curItems} setItems={setItems} toggleEditMenu={toggleEditMenu} />
+            <Card key={curItems.id} item={curItems} isCondensed={isCondensed} setItems={setItems} toggleEditMenu={toggleEditMenu} />
           ))}
         </div>
         {createMenu && (
@@ -728,7 +1088,7 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
     },
     alchemicalProperties: {
       description: "",
-      dissolvesIn: ["alcohol"], 
+      dissolvesIn: ["none"], 
       reactsWith: [""],
       reactions: [""], 
       uses: [""], 
@@ -1201,10 +1561,7 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
         >
           <option value="Solid">Solid</option>
           <option value="Liquid">Liquid</option>
-          <option value="Gas">Gas</option>
-          <option value="Textile">Textile</option>
-          <option value="Small-Pieces">Small-Pieces</option>
-          <option value="Powder">Powder</option>          
+          <option value="Gas">Gas</option>    
 
         </select>
       </div>
@@ -1229,6 +1586,8 @@ function Item_Creator_Menu({ mode, title, editItem, setItems, toggleCreateMenu, 
           <option value="Fluid">Fluid</option>
           <option value="Ceramic">Ceramic</option>
           <option value="Abberant">Abberant</option>
+          <option value="Abberant">Textile</option>
+          <option value="Abberant">Powder</option>
           <option value="Other">Other</option>
 
         </select>
