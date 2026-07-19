@@ -3,6 +3,7 @@ import { useNavigate, Routes, Route } from 'react-router-dom';
 import { Login, SignUp } from './User_Auth';
 import { useAuth } from './Auth_Context';
 import { Item_List} from './Item_Card';
+import { Blueprint_Menu } from "./Object_Type_Creator.tsx";
 import { supabase } from "./supabaseClient.tsx";
 import './Item_Card.css'
 import './App.css'
@@ -60,7 +61,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />}/>
           <Route path="/sign-up" element={<SignUp />}/>
-          <Route path="/item-list" element={<Item_List />} />
+          <Route path="/item-list_1" element={<Item_List />} />
+          <Route path="/item-list" element={<Blueprint_Menu />} />
         </Routes>
       </div>
     </>

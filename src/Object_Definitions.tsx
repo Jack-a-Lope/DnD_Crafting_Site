@@ -1,14 +1,16 @@
 //Config Settings
-export interface DropdownDetails { options: string[]; defaultOption: string; }
+export interface TitleDetails { defaultTitle: string; }
+export interface SubtitleDetails { defaultText: string; }
 export interface TextBoxDetails { maxLength: number; multiline: boolean; }
-export interface ImageDetails { url: string; maxWidth: number; maxHeight: number; subtitle: string; inline: boolean }
+export interface DropdownDetails { options: string[]; defaultOption: string; }
 export interface ToggleDetails { states: string[]; display: string; isImage: boolean }
 export interface ToggleListDetails { states: string[]; display: string[]; isImage: boolean }
-export interface VarLenDetails { }
+export interface ImageDetails { url: string; maxWidth: number; maxHeight: number; subtitle: string; inline: boolean }
+export interface VarLenDetails { defaultTitle: string; defaultDesc: string }
 export interface EmptyDetails { }
 
 export type FieldDefinition = 
-    | { type: "title"; details: EmptyDetails }
+    | { type: "title"; details: TitleDetails }
     | { type: "subtitle"; details: EmptyDetails }
     | { type: "text_box"; details: TextBoxDetails }
     | { type: "dropdown"; details: DropdownDetails }
