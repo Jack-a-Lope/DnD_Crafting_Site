@@ -33,20 +33,45 @@ const defaultField: Object.Field = {
             maxLength: 255,
             multiline: true
         }
+    },
+    dimensions: {
+        width: 100,
+        height: 100
     }
+}
+
+const defaultRow: Object.Row = {
+    id: -1,
+    fields: [],
 }
 
 const defaultSection: Object.Section = {
     id: -1,
     title: "Section Name",
-    fields: [],
+    rows: [defaultRow],
     startRevealed: true
 }
 
-function Field_Title({sec, field, updateFieldConfig}: {
+function generateDefaultConfig(newType: string): Object.FieldDefinition {
+    switch (newType) {
+        case "title":
+            return { type: "title", details: { defaultTitle: "" } };
+        case "subtitle":
+            return { type: "subtitle", details: { defaultText: "" } };
+        case "text_box":
+            return { type: "text_box", details: { maxLength: 255, multiline: true } };
+        case "dropdown":
+            return { type: "dropdown", details: { options: [], defaultOption: "" } };
+        default:
+            return { type: "title", details: { defaultTitle: "" } };
+    }
+}
+
+function Field_Title({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
+    row: Object.Row,
     field: Object.Field,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
 }) {
     if (field.config.type !== "title") {
         return null;
@@ -60,7 +85,7 @@ function Field_Title({sec, field, updateFieldConfig}: {
                     value={details.defaultTitle}
                     placeholder='Default Title'
                     onChange={(e) => {
-                        updateFieldConfig(sec.id, field.id, {
+                        updateFieldConfig(sec.id, row.id, field.id, {
                             type: "title",
                             details: {
                                 ...details,
@@ -74,10 +99,11 @@ function Field_Title({sec, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Subtitle({sec, field, updateFieldConfig}: {
+function Field_Subtitle({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
+    row: Object.Row,
     field: Object.Field,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
 }) {
     if (field.config.type !== "subtitle") {
         return null;
@@ -91,7 +117,7 @@ function Field_Subtitle({sec, field, updateFieldConfig}: {
                     value={details.defaultText}
                     placeholder='Default Subtitle'
                     onChange={(e) => {
-                        updateFieldConfig(sec.id, field.id, {
+                        updateFieldConfig(sec.id, row.id, field.id, {
                             type: "subtitle",
                             details: {
                                 ...details,
@@ -105,10 +131,11 @@ function Field_Subtitle({sec, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Textbox({sec, field, updateFieldConfig}: {
+function Field_Textbox({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
+    row: Object.Row,
     field: Object.Field,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
 }) {
     if (field.config.type !== "text_box") {
         return null;
@@ -121,12 +148,11 @@ function Field_Textbox({sec, field, updateFieldConfig}: {
                 <textarea 
                     className="dynamic-textarea"
                     placeholder="Example Text Box"
-                    onChange={(e) => {
-                        updateFieldConfig(sec.id, field.id, {
-                            type: "subtitle",
+                    onChange={() => {
+                        updateFieldConfig(sec.id, row.id, field.id, {
+                            type: "text_box",
                             details: {
                                 ...details,
-                                defaultText: e.target.value,
                             }
                         });
                     }}
@@ -136,10 +162,11 @@ function Field_Textbox({sec, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Dropdown({sec, field, updateFieldConfig}: {
+function Field_Dropdown({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
+    row: Object.Row,
     field: Object.Field,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
 }) {
     if (field.config.type !== "dropdown") {
         return null;
@@ -165,23 +192,24 @@ function Field_Dropdown({sec, field, updateFieldConfig}: {
     </>)
 }
 
-function Menu_Field({ sec, field, updateFieldTitle, updateFieldConfig, removeField }: { 
+function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, removeField }: { 
     sec: Object.Section,
+    row: Object.Row,
     field: Object.Field, 
-    updateFieldTitle: (sectionId: number, fieldId: number, newTitle: string) => void,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
-    removeField: (sectionId: number, fieldId: number) => void 
+    updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    removeField: (sectionId: number, rowId: number, fieldId: number) => void 
 }) {
     const renderFieldConfig = () => {
         switch (field.config.type) {
             case "title":
-                return <Field_Title sec={sec} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Title sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "subtitle":
-                return <Field_Subtitle sec={sec} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Subtitle sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "text_box":
-                return <Field_Textbox sec={sec} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Textbox sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "dropdown":
-                return <Field_Dropdown sec={sec} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Dropdown sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
         }
     }
 
@@ -195,7 +223,7 @@ function Menu_Field({ sec, field, updateFieldTitle, updateFieldConfig, removeFie
                     value={field.title}
                     placeholder='Field Name'
                     onChange={(e) => {
-                        updateFieldTitle(sec.id, field.id, e.target.value);
+                        updateFieldTitle(sec.id, row.id, field.id, e.target.value);
                     }}
                 />
                 </div>
@@ -205,7 +233,11 @@ function Menu_Field({ sec, field, updateFieldTitle, updateFieldConfig, removeFie
                         <select
                             className='menu-dropdown section'
                             value={field.config.type}
-                            onChange={(e) => updateFieldConfig(sec.id, field.id, {...field.config, type: e.target.value as any})}
+                            onChange={(e) => {
+                                const freshConfig = generateDefaultConfig(e.target.value)
+                                updateFieldConfig(sec.id, row.id, field.id, freshConfig)
+                            
+                            }}
                         >
                             {[
                                 { value: 'title', label: "Title" }, 
@@ -228,9 +260,55 @@ function Menu_Field({ sec, field, updateFieldTitle, updateFieldConfig, removeFie
             <img 
                 className="menu-btn-icon object" 
                 src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
-                onClick={() => removeField(sec.id, field.id)} 
+                onClick={() => removeField(sec.id, row.id, field.id)} 
             />
         </div>
+    </>)
+}
+
+function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, removeField, addField }: { 
+    sec: Object.Section,
+    row: Object.Row,
+    updateSectionTitle: (sectionId: number, newTitle: string) => void, 
+    removeSection: (sectionId: number) => void,
+    updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    removeField: (sectionId: number, rowId: number, fieldId: number) => void,
+    addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
+
+    return (<>
+        <div className='section-row'>
+            <input 
+                className='small-input'
+                value = {sec.title}
+                onChange={(e) => updateSectionTitle(sec.id, e.target.value)}
+            />
+            <div>
+                <img 
+                    className="menu-btn-icon object positive" 
+                    src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/plusIcon.png"
+                    onClick={() => addField(sec.id, row.id, defaultField)}
+                />
+                <img 
+                    className="menu-btn-icon object" 
+                    src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
+                    onClick={() => removeSection(sec.id)}
+                />
+            </div>
+        </div>
+        
+        {row.fields.map((field) => (
+            <Menu_Field 
+                key={field.id}
+                sec={sec}
+                row={row}
+                field={field}
+                updateFieldTitle={updateFieldTitle}
+                updateFieldConfig={updateFieldConfig}
+                removeField={removeField}
+            />
+        ))}
+        
     </>)
 }
 
@@ -238,42 +316,26 @@ function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle
     sec: Object.Section, 
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
     removeSection: (sectionId: number) => void,
-    updateFieldTitle: (sectionId: number, fieldId: number, newTitle: string) => void,
-    updateFieldConfig: (sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
-    removeField: (sectionId: number, fieldId: number) => void,
-    addField: (sectionId: number, newField: Object.Field) => void }) {
+    updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    removeField: (sectionId: number, rowId: number, fieldId: number) => void,
+    addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
 
     return (<>
         <div className="section-wrapper">
             <div className="section-primary">
-                <div className='section-row'>
-                    <input 
-                        className='small-input'
-                        value = {sec.title}
-                        onChange={(e) => updateSectionTitle(sec.id, e.target.value)}
-                    />
-                    <div>
-                        <img 
-                            className="menu-btn-icon object positive" 
-                            src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/plusIcon.png"
-                            onClick={() => addField(sec.id, defaultField)}
-                        />
-                        <img 
-                            className="menu-btn-icon object" 
-                            src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
-                            onClick={() => removeSection(sec.id)}
-                        />
-                    </div>
-                </div>
                 
-                {sec.fields.map((field) => (
-                    <Menu_Field 
-                        key={field.id}
+                {sec.rows.map((row) => (
+                    <Menu_Row
+                        key={row.id}
                         sec={sec}
-                        field={field}
+                        row={row}
+                        updateSectionTitle={updateSectionTitle}
+                        removeSection={removeSection}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
                         removeField={removeField}
+                        addField={addField}
                     />
                 ))}
             </div>
@@ -289,9 +351,11 @@ export function Blueprint_Menu() {
     function addSection() {
         setBlueprint((prev) => {
             const uniqueId = Date.now();
+            const uniqueRowId = Date.now();
             const newSection: Object.Section = {
                 ...defaultSection,
-                id: uniqueId
+                id: uniqueId,
+                rows: [{ ...defaultRow, id: uniqueRowId }]
             }
             return {
                 ...prev,
@@ -307,7 +371,37 @@ export function Blueprint_Menu() {
         }))
     }
 
-    function addField(sectionId: number, newField: Object.Field = defaultField) {
+    function addRow(sectionId: number) {
+        setBlueprint((prev) => {
+            const uniqueRowId = Date.now();
+            const rowWithId = {
+                ...defaultRow,
+                id: uniqueRowId
+            }
+
+            return {
+                ...prev,
+                sections: prev.sections.map((section) =>
+                    section.id === sectionId
+                        ? { ...section, rows: [...section.rows, rowWithId] }
+                        : section
+                )
+            }
+        })
+    }
+
+    function removeRow(sectionId: number, rowId: number) {
+        setBlueprint((prev) => ({
+            ...prev,
+            sections: prev.sections.map((section) =>
+                section.id === sectionId
+                    ? { ...section, rows: section.rows.filter((row) => row.id !== rowId) }
+                    : section
+            )
+        }))
+    }
+
+    function addField(sectionId: number, rowId: number, newField: Object.Field = defaultField) {
         console.log("Add Field id: ", sectionId);
         setBlueprint((prev) => {
             const uniqueFieldId = Date.now();
@@ -320,34 +414,49 @@ export function Blueprint_Menu() {
                 ...prev,
                 sections: prev.sections.map((section) =>
                     section.id === sectionId
-                    ? { ...section, fields: [...section.fields, fieldWithId] }
+                    ? { ...section, rows: section.rows.map((row) =>
+                        row.id === rowId
+                        ? { ...row, fields: [...row.fields, fieldWithId]}
+                        : row
+                    ) }
                     : section
                 )
             }
         })
     }
 
-    function removeField(sectionId: number, fieldId: number) {
+    function removeField(sectionId: number, rowId: number, fieldId: number) {
         setBlueprint((prev) => ({
             ...prev,
             sections: prev.sections.map((section) =>
                 section.id === sectionId
-                ? { ...section, fields: section.fields.filter((field) => (field.id !== fieldId)) }
+                ? {
+                    ...section,
+                    rows: section.rows.map((row) =>
+                        row.id === rowId
+                        ? { ...row, fields: row.fields.filter((field) => field.id !== fieldId) }
+                        : row
+                    )
+                }
                 : section
             )
         }))
     }
 
-    function updateFieldConfig(sectionId: number, fieldId: number, newConfig: Object.FieldDefinition) {
+    function updateFieldConfig(sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) {
         setBlueprint((prev) => {
             return {
                 ...prev,
                 sections: prev.sections.map((section) =>
                     section.id === sectionId
-                    ? { ...section, fields: section.fields.map((field) => 
-                        field.id === fieldId
-                        ? {...field, config: newConfig}
-                        : field
+                    ? { ...section, rows: section.rows.map((row) => 
+                        row.id === rowId
+                        ? { ...row, fields: row.fields.map((field) => 
+                            field.id === fieldId
+                            ? {...field, config: newConfig}
+                            : field
+                        ) }
+                        : row
                     ) }
                     : section
                 )
@@ -373,15 +482,19 @@ export function Blueprint_Menu() {
         }))
     }
 
-    function updateFieldTitle(sectionId: number, fieldId: number, newTitle: string) {
+    function updateFieldTitle(sectionId: number, rowId: number, fieldId: number, newTitle: string) {
         setBlueprint((prev) => ({
             ...prev,
             sections: prev.sections.map((section) => 
             section.id === sectionId
-            ? {...section, fields: section.fields.map((field) => 
-                field.id === fieldId
-                ? {...field, title: newTitle}
-                : field
+            ? {...section, rows: section.rows.map((row) => 
+                row.id === rowId
+                ? {...row, fields: row.fields.map((field) => 
+                    field.id === fieldId
+                    ? {...field, title: newTitle}
+                    : field
+                )}
+                : row
             )}
             : section
             )

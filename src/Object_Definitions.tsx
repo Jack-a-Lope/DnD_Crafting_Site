@@ -24,13 +24,23 @@ export interface Field {
     id: number; //Unique id for the field
     title: string; //Name of the field as displayed to users
     config: FieldDefinition; 
+    dimensions: {
+        width: number;
+        height: number | "auto";
+    }
+}
+
+//Dynamic system to contain fields and allow
+export interface Row {
+    id: number;
+    fields: Field[];
 }
 
 //Object to contain variable number of fields
 export interface Section {
     id: number; //unique id for the section
     title: string; //name for the section that will be displayed as subheading
-    fields: Field[]; // The actual fields
+    rows: Row[]; // The actual fields
     startRevealed: boolean; //whether or not the default state of this is to be revealed to players
 }
 
