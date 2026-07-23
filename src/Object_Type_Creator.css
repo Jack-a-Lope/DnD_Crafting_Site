@@ -76,6 +76,7 @@
     gap: .2rem;
     border-top: 2px solid #922610;
     margin: .2rem 0rem;
+    width: 48%;
 }
 
 .section-wrapper h3 {
@@ -131,4 +132,29 @@
       font-size: 0.8rem;
       min-height: 0.85rem;
       width: auto;
+}
+
+.row-field-list {
+    display: flex;
+    gap: 1rem;
+    min-height: 50px;
+    padding: .2rem;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.row-field-list:hover,
+.row-field-list.is-drag-over {
+    border: 1px dashed #aeaeae;
+    background-color: #acacac2d;
+}
+
+.drag-overlay {
+    width: 48%;
+    height: fit-content;
+    display: flex;
+    background-color: #ffffffDD;
+    box-shadow: 0px 15px 30px #00000033;
+    border-radius: 8px;
+    cursor: grabbing;
 }

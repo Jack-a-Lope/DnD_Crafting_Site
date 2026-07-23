@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { supabase } from './supabaseClient.tsx'
 import { useAuth } from './Auth_Context';
-import './Object_Type_Creator.css'
+import { DragOverlay, DndContext, pointerWithin, type DragEndEvent } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { arrayMove } from '@dnd-kit/sortable';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css'
 import * as Object from './Object_Definitions.tsx'
 
 const defaultStyle: Object.StyleDetails = {
@@ -200,6 +205,7 @@ function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, remo
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
     removeField: (sectionId: number, rowId: number, fieldId: number) => void 
 }) {
+
     const renderFieldConfig = () => {
         switch (field.config.type) {
             case "title":
@@ -213,8 +219,36 @@ function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, remo
         }
     }
 
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: field.id,
+        transition: {
+            duration: 350,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        }
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        transition,
+        zIndex: isDragging ? 999 : 1,
+        position: isDragging ? "relative" : ("static" as any), 
+        opacity: isDragging ? 0 : 1,
+        backgroundColor: isDragging? "#ffffff" : "#ffffff00",
+        borderRadius: isDragging? "8px" : "0px"
+    }
+
     return (<>
-        <div className="section-wrapper field">
+        <div ref={setNodeRef} style={style} className="section-wrapper field">
+            <div {...attributes} {...listeners} style={{ cursor: 'grab', backgroundColor: '#eee', padding: '5px' }}>
+                ⠿ Drag Here
+            </div>
             <div className='section-primary'>
                 <div className="section-row">
                     <h3>Field Name: </h3>
@@ -276,6 +310,13 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
     addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
 
+    const { setNodeRef, isOver } = useDroppable({
+        id: row.id,
+    });
+
+    const {over} = useDndContext();
+    const isHovered = over?.id === row.id || row.fields.some(f => f.id === over?.id);
+
     return (<>
         <div className='section-row'>
             <input 
@@ -296,18 +337,30 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
                 />
             </div>
         </div>
+
+        <SortableContext
+            items={row.fields.map(field => field.id)}
+            strategy={rectSortingStrategy}
+        >
+            <div 
+                ref={setNodeRef} 
+                className={`row-field-list ${isHovered ? 'is-drag-over' : ''}`}
+            >
+                {row.fields.map((field) => (
+                    <Menu_Field 
+                        key={field.id}
+                        sec={sec}
+                        row={row}
+                        field={field}
+                        updateFieldTitle={updateFieldTitle}
+                        updateFieldConfig={updateFieldConfig}
+                        removeField={removeField}
+                    />
+                ))}
+            </div>
+        </SortableContext>
         
-        {row.fields.map((field) => (
-            <Menu_Field 
-                key={field.id}
-                sec={sec}
-                row={row}
-                field={field}
-                updateFieldTitle={updateFieldTitle}
-                updateFieldConfig={updateFieldConfig}
-                removeField={removeField}
-            />
-        ))}
+        
         
     </>)
 }
@@ -346,6 +399,7 @@ function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle
 
 export function Blueprint_Menu() {
     const [blueprint, setBlueprint] = useState<Object.Type>(defaultBlueprint);
+    const [activeField, setActiveField] = useState<Object.Field | null>(null);
 
     {/* Helper Functions */}
     function addSection() {
@@ -501,32 +555,160 @@ export function Blueprint_Menu() {
         }))
     }
 
-    return (<>
+    function findLocation(searchId: number) {
+        const id = Number(searchId);
 
-        <div className="blueprint-wrapper">
-            <div className='blueprint-container'>
-                <p>Text</p>
-                <input 
-                    value = {blueprint.title}
-                    onChange={(e) => updateBlueprintTitle(e.target.value)}
-                />
-                <button onClick={addSection}>
-                    Add Section
-                </button>
-                {blueprint.sections.map((sec) => (
-                    <Menu_Section 
-                        key={sec.id}
-                        sec={sec}
-                        updateSectionTitle={updateSectionTitle}
-                        removeSection={removeSection}
-                        updateFieldTitle={updateFieldTitle}
-                        updateFieldConfig={updateFieldConfig}
-                        removeField={removeField}
-                        addField={addField}
-                     />
-                ))}
+        for (const section of blueprint.sections) {
+            for (const row of section.rows) {
+                if (row.id === id) {
+                    return { sectionId: section.id, rowId: row.id, index: row.fields.length, isRow: true}
+                }
+
+                const fieldIndex = row.fields.findIndex(f => f.id === id);
+                if (fieldIndex !== -1) {
+                    return { sectionId: section.id, rowId: row.id, index: fieldIndex, field: row.fields[fieldIndex], isRow: false}
+                }
+            }
+        }
+        return null;
+    }
+
+    function handleDragStart(event: any) {
+        const { active } = event;
+        const location = findLocation(active.id);
+        if (location && location.field) {
+            setActiveField(location.field as Object.Field);
+        }
+    }
+
+    function handleDragOver(event: any) {
+        const {active, over} = event;
+
+        if (!over || active.id === over.id) {
+            return; {/* When the user drops it outside the area */}
+        }
+
+        const source = findLocation(active.id as number);
+        const destination = findLocation(over.id as number);
+
+        if (!source || !destination || !source.field) return;
+
+        if (source.rowId !== destination.rowId) {
+            setBlueprint((prev) => {
+                return {
+                    ...prev,
+                    sections: prev.sections.map((sec) => {
+                        if (sec.id !== source.sectionId && sec.id !== destination.sectionId) {
+                            return sec;
+                        }
+                        else {
+                            return {
+                                ...sec,
+                                rows: sec.rows.map((row) => {
+                                    let newFields = [...row.fields];
+                                    if (row.id === source.rowId) {
+                                        newFields = newFields.filter(field => field.id !== active.id)
+                                    }
+                                    if (row.id === destination.rowId) {
+                                        newFields.splice(destination.index, 0, source.field as Object.Field)
+                                    }
+
+                                    return { 
+                                        ...row,
+                                        fields: newFields
+                                    };
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+        }
+        
+    }
+
+    function handleDragEnd(event: DragEndEvent) {
+        setActiveField(null);
+        const {active, over} = event;
+
+        if (!over || active.id === over.id) {
+            return; {/* When the user drops it outside the area */}
+        }
+
+        const source = findLocation(active.id as number);
+        const destination = findLocation(over.id as number);
+
+        if (!source || !destination || !source.field) return;
+
+        if (source.rowId === destination.rowId) {
+            setBlueprint((prev) => {
+                return {
+                    ...prev,
+                    sections: prev.sections.map((sec) =>
+                        sec.id === source.sectionId
+                        ? {
+                            ...sec,
+                            rows: sec.rows.map((row) => 
+                                row.id === source.rowId
+                                ? { ...row, fields: arrayMove(row.fields, source.index, destination.index) }
+                                : row
+                            )
+                        }
+                        : sec
+                    )
+                }
+            })
+        }
+        
+    }
+
+    return (<>
+        <DndContext
+            collisionDetection={pointerWithin}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+        >
+            <div className="blueprint-wrapper">
+                <div className='blueprint-container'>
+                    <p>Text</p>
+                    <input 
+                        value = {blueprint.title}
+                        onChange={(e) => updateBlueprintTitle(e.target.value)}
+                    />
+                    <button onClick={addSection}>
+                        Add Section
+                    </button>
+                    {blueprint.sections.map((sec) => (
+                        <Menu_Section 
+                            key={sec.id}
+                            sec={sec}
+                            updateSectionTitle={updateSectionTitle}
+                            removeSection={removeSection}
+                            updateFieldTitle={updateFieldTitle}
+                            updateFieldConfig={updateFieldConfig}
+                            removeField={removeField}
+                            addField={addField}
+                        />
+                    ))}
+                </div>
             </div>
-        </div>
+            <DragOverlay className='drag-overlay'>
+                {activeField ? (
+                    <Menu_Field 
+                        sec={defaultSection} 
+                        row={defaultRow} 
+                        field={activeField} 
+                        updateFieldTitle={() => {}}
+                        updateFieldConfig={() => {}}
+                        removeField={() => {}}
+                        
+                    />
+                ) : null}
+            </DragOverlay>
+        </DndContext>
+        
+
     </>)
 }
 
