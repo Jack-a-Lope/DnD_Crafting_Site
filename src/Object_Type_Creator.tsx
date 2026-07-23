@@ -197,10 +197,11 @@ function Field_Dropdown({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, removeField }: { 
+function Menu_Field({ sec, row, field, isOverlay, updateFieldTitle, updateFieldConfig, removeField }: { 
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field, 
+    isOverlay: boolean,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
     removeField: (sectionId: number, rowId: number, fieldId: number) => void 
@@ -234,7 +235,13 @@ function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, remo
         }
     });
 
-    const style = {
+    const style = isOverlay ? {
+        width: '100%',
+        borderRadius: '8px',
+        boxShadow: '0px 15px 30px rgba(0,0,0,0.2)',
+        backgroundColor: "#ffffffAA",
+        cursor: 'grabbing'
+    } : {
         transform: CSS.Translate.toString(transform),
         transition,
         zIndex: isDragging ? 999 : 1,
@@ -245,9 +252,9 @@ function Menu_Field({ sec, row, field, updateFieldTitle, updateFieldConfig, remo
     }
 
     return (<>
-        <div ref={setNodeRef} style={style} className="section-wrapper field">
-            <div {...attributes} {...listeners} style={{ cursor: 'grab', backgroundColor: '#eee', padding: '5px' }}>
-                ⠿ Drag Here
+        <div ref={isOverlay ? null : setNodeRef} style={style} className="section-wrapper field">
+            <div {...(isOverlay ? {} : attributes)} {...(isOverlay ? {} : listeners)} style={{ cursor: 'grab', padding: '.2rem' }}>
+                ⠿
             </div>
             <div className='section-primary'>
                 <div className="section-row">
@@ -352,6 +359,7 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
                         sec={sec}
                         row={row}
                         field={field}
+                        isOverlay={false}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
                         removeField={removeField}
@@ -693,12 +701,13 @@ export function Blueprint_Menu() {
                     ))}
                 </div>
             </div>
-            <DragOverlay className='drag-overlay'>
+            <DragOverlay>
                 {activeField ? (
                     <Menu_Field 
                         sec={defaultSection} 
                         row={defaultRow} 
-                        field={activeField} 
+                        field={activeField}
+                        isOverlay={true}
                         updateFieldTitle={() => {}}
                         updateFieldConfig={() => {}}
                         removeField={() => {}}

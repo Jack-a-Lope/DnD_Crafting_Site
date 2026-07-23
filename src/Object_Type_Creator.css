@@ -79,6 +79,10 @@
     width: 48%;
 }
 
+.section-wrapper.field:hover {
+    background-color: #ffffff;
+}
+
 .section-wrapper h3 {
     font-size: 0.8rem;
     text-transform: capitalize;
