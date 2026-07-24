@@ -36,7 +36,8 @@ const defaultField: Object.Field = {
         type: "text_box",
         details: {
             maxLength: 255,
-            multiline: true
+            multiline: true,
+            placeholder: "placeholder text",
         }
     },
     dimensions: {
