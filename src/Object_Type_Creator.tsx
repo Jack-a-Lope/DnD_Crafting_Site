@@ -5,7 +5,7 @@ import { DragOverlay, DndContext, pointerWithin, type DragEndEvent } from '@dnd-
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useDroppable, useDndContext } from '@dnd-kit/core';
+import { useDroppable, useDndContext, useDraggable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css'
 import * as Object from './Object_Definitions.tsx'
 
@@ -197,11 +197,12 @@ function Field_Dropdown({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Menu_Field({ sec, row, field, isOverlay, updateFieldTitle, updateFieldConfig, removeField }: { 
+function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, updateFieldConfig, removeField }: { 
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field, 
     isOverlay: boolean,
+    isFloating: boolean,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
     removeField: (sectionId: number, rowId: number, fieldId: number) => void 
@@ -248,7 +249,15 @@ function Menu_Field({ sec, row, field, isOverlay, updateFieldTitle, updateFieldC
         position: isDragging ? "relative" : ("static" as any), 
         opacity: isDragging ? 0 : 1,
         backgroundColor: isDragging? "#ffffff" : "#ffffff00",
-        borderRadius: isDragging? "8px" : "0px"
+        borderRadius: isDragging? "8px" : "0px",
+
+        ...(isFloating && {
+            width: '320px',
+            height: 'max-content',
+            backgroundColor: '#fff1e0',
+            borderRadius: '8px',
+            boxShadow: '0px 10px 20px rgba(0,0,0,0.15)', // Slightly softer shadow than the dragged item
+        })
     }
 
     return (<>
@@ -360,6 +369,7 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
                         row={row}
                         field={field}
                         isOverlay={false}
+                        isFloating={false}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
                         removeField={removeField}
@@ -408,6 +418,9 @@ function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle
 export function Blueprint_Menu() {
     const [blueprint, setBlueprint] = useState<Object.Type>(defaultBlueprint);
     const [activeField, setActiveField] = useState<Object.Field | null>(null);
+    const [floatingFields, setFloatingFields] = useState<{field: Object.Field, x: number, y: number}[]>([]);
+    const workAreaRef = useRef<HTMLDivElement>(null);
+    const [selectedField, setSelectedField] = useState<Object.Field | null>(null);
 
     {/* Helper Functions */}
     function addSection() {
@@ -566,6 +579,11 @@ export function Blueprint_Menu() {
     function findLocation(searchId: number) {
         const id = Number(searchId);
 
+        const floatingIndex = floatingFields.findIndex(f => f.field.id === id);
+        if (floatingIndex !== -1) {
+            return { isFloating: true, index: floatingIndex, field: floatingFields[floatingIndex].field }
+        }
+
         for (const section of blueprint.sections) {
             for (const row of section.rows) {
                 if (row.id === id) {
@@ -600,6 +618,29 @@ export function Blueprint_Menu() {
         const destination = findLocation(over.id as number);
 
         if (!source || !destination || !source.field) return;
+
+        if (source.isFloating && !destination.isFloating) {
+            setFloatingFields(prev => prev.filter(f => f.field.id !== active.id))
+            setBlueprint(prev => ({
+                ...prev,
+                sections: prev.sections.map(sec => 
+                    sec.id === destination.sectionId
+                    ? {
+                        ...sec,
+                        rows: sec.rows.map(row => { 
+                            if (row.id === destination.rowId) {
+                                const newFields = [...row.fields];
+                                const insertIndex = destination.isRow ? 0 : destination.index;
+                                newFields.splice(insertIndex, 0, source.field as Object.Field);
+                                return { ...row, fields: newFields };
+                            }
+                            return row;
+                        })
+                    } : sec
+                )
+            }));
+            return;
+        }
 
         if (source.rowId !== destination.rowId) {
             setBlueprint((prev) => {
@@ -637,13 +678,56 @@ export function Blueprint_Menu() {
 
     function handleDragEnd(event: DragEndEvent) {
         setActiveField(null);
-        const {active, over} = event;
+        const {active, over, delta} = event;
+        const source = findLocation(active.id as number);
 
-        if (!over || active.id === over.id) {
-            return; {/* When the user drops it outside the area */}
+        if (!over) {
+            const initialRect = active.rect.current.initial;
+            if (!initialRect) return;
+
+            const finalLeft = initialRect.left + delta.x;
+            const finalTop = initialRect.top + delta.y;
+
+            const finalWidth = initialRect.width ?? 320; 
+            const finalHeight = initialRect.height ?? 150;
+
+            const container = workAreaRef.current?.getBoundingClientRect();
+            if (!container) return;
+
+            const relativeX = finalLeft - container.left;
+            const relativeY = finalTop - container.top;
+
+            const padding = 20;
+
+            const maxX = container.width - finalWidth;
+            const maxY = container.height - finalHeight;
+
+            const safeX = Math.max(padding, Math.min(relativeX, maxX - padding));
+            const safeY = Math.max(padding, Math.min(relativeY, maxY - padding));
+
+            if (source && source.field) {
+                if (!source.isFloating) {
+                    setFloatingFields((prev) => [
+                        ...prev,
+                        { field: source.field as Object.Field, x: safeX, y: safeY}
+                    ]);
+                    removeField(source.sectionId as number, source.rowId as number, active.id as number);
+                } else {
+                    setFloatingFields((prev) => 
+                        prev.map(item =>
+                            item.field.id === active.id
+                            ? { ...item, x: safeX, y: safeY } 
+                            : item
+                        )
+                    );
+                }
+            }
+            return;
+        }
+        if (active.id === over.id) {
+            return; {/* When the user drops it in same area */}
         }
 
-        const source = findLocation(active.id as number);
         const destination = findLocation(over.id as number);
 
         if (!source || !destination || !source.field) return;
@@ -670,53 +754,102 @@ export function Blueprint_Menu() {
         
     }
 
+    function updateFloatingTitle(sectionId: number, rowId: number, fieldId: number, newTitle: string) {
+        setFloatingFields(prev => prev.map(item => 
+            item.field.id === fieldId ? { ...item, field: { ...item.field, title: newTitle } } : item
+        ));
+    }
+
+    function updateFloatingConfig(sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) {
+        setFloatingFields(prev => prev.map(item => 
+            item.field.id === fieldId ? { ...item, field: { ...item.field, config: newConfig } } : item
+        ));
+    }
+
+    function removeFloatingField(sectionId: number, rowId: number, fieldId: number) {
+        setFloatingFields(prev => prev.filter(item => item.field.id !== fieldId));
+    }
+
     return (<>
-        <DndContext
-            collisionDetection={pointerWithin}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-        >
-            <div className="blueprint-wrapper">
-                <div className='blueprint-container'>
-                    <p>Text</p>
-                    <input 
-                        value = {blueprint.title}
-                        onChange={(e) => updateBlueprintTitle(e.target.value)}
-                    />
-                    <button onClick={addSection}>
-                        Add Section
-                    </button>
-                    {blueprint.sections.map((sec) => (
-                        <Menu_Section 
-                            key={sec.id}
-                            sec={sec}
-                            updateSectionTitle={updateSectionTitle}
-                            removeSection={removeSection}
-                            updateFieldTitle={updateFieldTitle}
-                            updateFieldConfig={updateFieldConfig}
-                            removeField={removeField}
-                            addField={addField}
+    <div style={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 60px)', width: '100%', overflow: 'hidden' }}>
+        <div className="sidebar">
+            <p>Test</p>
+        </div>
+        <div className='workspace'>
+            <DndContext
+                collisionDetection={pointerWithin}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="blueprint-wrapper" ref={workAreaRef}>
+                    <div className='blueprint-container'>
+                        <p>{blueprint.title}</p>
+                        <input 
+                            value = {blueprint.title}
+                            onChange={(e) => updateBlueprintTitle(e.target.value)}
                         />
-                    ))}
+                        <button onClick={addSection}>
+                            Add Section
+                        </button>
+                        {blueprint.sections.map((sec) => (
+                            <Menu_Section 
+                                key={sec.id}
+                                sec={sec}
+                                updateSectionTitle={updateSectionTitle}
+                                removeSection={removeSection}
+                                updateFieldTitle={updateFieldTitle}
+                                updateFieldConfig={updateFieldConfig}
+                                removeField={removeField}
+                                addField={addField}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
-            <DragOverlay>
-                {activeField ? (
-                    <Menu_Field 
-                        sec={defaultSection} 
-                        row={defaultRow} 
-                        field={activeField}
-                        isOverlay={true}
-                        updateFieldTitle={() => {}}
-                        updateFieldConfig={() => {}}
-                        removeField={() => {}}
-                        
-                    />
-                ) : null}
-            </DragOverlay>
-        </DndContext>
-        
+                <DragOverlay>
+                    {activeField ? (
+                        <Menu_Field 
+                            sec={defaultSection} 
+                            row={defaultRow} 
+                            field={activeField}
+                            isOverlay={true}
+                            isFloating={false}
+                            updateFieldTitle={() => {}}
+                            updateFieldConfig={() => {}}
+                            removeField={() => {}}
+                            
+                        />
+                    ) : null}
+                </DragOverlay>
+                {floatingFields.map(item => (
+                    <div 
+                        key={item.field.id} 
+                        style={{ 
+                            position: 'absolute', 
+                            left: item.x, 
+                            top: item.y, 
+                            zIndex: 10,
+                            width: 'max-content'
+                        }}
+                    >
+                        <Menu_Field 
+                            sec={defaultSection} 
+                            row={defaultRow} 
+                            field={item.field} 
+                            isOverlay={false}
+                            isFloating={true}
+                            updateFieldTitle={updateFloatingTitle}
+                            updateFieldConfig={updateFloatingConfig}
+                            removeField={removeFloatingField}
+                        />
+                    </div>
+                ))}
+            </DndContext>
+        </div>
+        <div className="sidebar right">
+            <p>Test</p>
+        </div>
+    </div>
 
     </>)
 }
