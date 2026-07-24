@@ -5,7 +5,7 @@ import { DragOverlay, DndContext, pointerWithin, type DragEndEvent } from '@dnd-
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useDroppable, useDndContext, useDraggable } from '@dnd-kit/core';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css'
 import * as Object from './Object_Definitions.tsx'
 
@@ -57,6 +57,17 @@ const defaultSection: Object.Section = {
     startRevealed: true
 }
 
+const fieldTypes = [
+    { value: 'title', label: "Title" }, 
+    { value: 'subtitle', label: "Subtitle" }, 
+    { value: 'text_box', label: "Text Box" }, 
+    { value: 'dropdown', label: "Dropdown" },
+    { value: 'toggle', label: "Toggle" },
+    { value: 'toggle_list', label: "Toggle List"}, 
+    { value: 'image', label: "Image" }, 
+    { value: 'var_len', label: "Custom" },
+] as const;
+
 function generateDefaultConfig(newType: string): Object.FieldDefinition {
     switch (newType) {
         case "title":
@@ -64,7 +75,7 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
         case "subtitle":
             return { type: "subtitle", details: { defaultText: "" } };
         case "text_box":
-            return { type: "text_box", details: { maxLength: 255, multiline: true } };
+            return { type: "text_box", details: { maxLength: 255, multiline: true, placeholder: "placehoder text" } };
         case "dropdown":
             return { type: "dropdown", details: { options: [], defaultOption: "" } };
         default:
@@ -136,7 +147,7 @@ function Field_Subtitle({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Textbox({sec, row, field, updateFieldConfig}: {
+function Field_Display_Textbox({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field,
@@ -148,22 +159,40 @@ function Field_Textbox({sec, row, field, updateFieldConfig}: {
     const details = field.config.details as Object.TextBoxDetails;
     return (<>
         <div className='field-wrapper'>
-            <div className='field-line'>
+            <div className='field-val'>
                 <h4>{field.title}:</h4>
-                <textarea 
-                    className="dynamic-textarea"
-                    placeholder="Example Text Box"
-                    onChange={() => {
-                        updateFieldConfig(sec.id, row.id, field.id, {
-                            type: "text_box",
-                            details: {
-                                ...details,
-                            }
-                        });
-                    }}
-                />
+                <p>{field.config.details.placeholder}</p>
             </div>
         </div>
+    </>)
+}
+
+function Field_Config_Textbox({sec, row, field, updateFieldConfig}: {
+    sec: Object.Section,
+    row: Object.Row,
+    field: Object.Field,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+}) {
+    if (field.config.type !== "text_box") {
+        return null;
+    }
+    const details = field.config.details as Object.TextBoxDetails;
+    return (<>
+        <p>Textbox Placeholder:</p>
+        <textarea 
+            className="dynamic-textarea"
+            placeholder={field.title.toLocaleLowerCase()}
+            value={field.config.details.placeholder}
+            onChange={(e) => {
+                updateFieldConfig(sec.id, row.id, field.id, {
+                    type: "text_box",
+                    details: {
+                        ...details,
+                        placeholder: e.target.value
+                    }
+                });
+            }}
+        />
     </>)
 }
 
@@ -197,7 +226,7 @@ function Field_Dropdown({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, updateFieldConfig, removeField }: { 
+function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, updateFieldConfig, removeField, setCurField }: { 
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field, 
@@ -205,7 +234,8 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
     isFloating: boolean,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
-    removeField: (sectionId: number, rowId: number, fieldId: number) => void 
+    removeField: (sectionId: number, rowId: number, fieldId: number) => void,
+    setCurField: (sectionId: number, rowId: number, fieldId: number) => void
 }) {
 
     const renderFieldConfig = () => {
@@ -215,7 +245,7 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
             case "subtitle":
                 return <Field_Subtitle sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "text_box":
-                return <Field_Textbox sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Display_Textbox sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "dropdown":
                 return <Field_Dropdown sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
         }
@@ -261,48 +291,19 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
     }
 
     return (<>
-        <div ref={isOverlay ? null : setNodeRef} style={style} className="section-wrapper field">
+        <div 
+            ref={isOverlay ? null : setNodeRef}
+            style={style} 
+            className="section-wrapper field"
+            onClick={() => {
+                setCurField(sec.id, row.id, field.id);
+            }}
+        >
             <div {...(isOverlay ? {} : attributes)} {...(isOverlay ? {} : listeners)} style={{ cursor: 'grab', padding: '.2rem' }}>
                 ⠿
             </div>
             <div className='section-primary'>
-                <div className="section-row">
-                    <h3>Field Name: </h3>
-                    <input 
-                    className="small-input"
-                    value={field.title}
-                    placeholder='Field Name'
-                    onChange={(e) => {
-                        updateFieldTitle(sec.id, row.id, field.id, e.target.value);
-                    }}
-                />
-                </div>
                 <div style={{display:'flex', flexDirection:"column", margin:"0rem .5rem", gap:".2rem"}}>
-                    <div className='section-row fields'>
-                        <h3>Field Type: </h3>
-                        <select
-                            className='menu-dropdown section'
-                            value={field.config.type}
-                            onChange={(e) => {
-                                const freshConfig = generateDefaultConfig(e.target.value)
-                                updateFieldConfig(sec.id, row.id, field.id, freshConfig)
-                            
-                            }}
-                        >
-                            {[
-                                { value: 'title', label: "Title" }, 
-                                { value: 'subtitle', label: "Subtitle" }, 
-                                { value: 'text_box', label: "Text Box" }, 
-                                { value: 'dropdown', label: "Dropdown" },
-                                { value: 'toggle', label: "Toggle" },
-                                { value: 'toggle_list', label: "Toggle List"}, 
-                                { value: 'image', label: "Image" }, 
-                                { value: 'var_len', label: "Custom" },
-                            ].map((t) => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                        </select>
-                    </div>
                     {renderFieldConfig()}
                 </div>
                 
@@ -310,19 +311,23 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
             <img 
                 className="menu-btn-icon object" 
                 src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
-                onClick={() => removeField(sec.id, row.id, field.id)} 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    removeField(sec.id, row.id, field.id);
+                }}
             />
         </div>
     </>)
 }
 
-function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, removeField, addField }: { 
+function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
     sec: Object.Section,
     row: Object.Row,
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
     removeSection: (sectionId: number) => void,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
-    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
+    setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
     addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
 
@@ -372,6 +377,7 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
                         isFloating={false}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
+                        setCurField={setCurField}
                         removeField={removeField}
                     />
                 ))}
@@ -383,12 +389,13 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
     </>)
 }
 
-function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, removeField, addField }: { 
+function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
     sec: Object.Section, 
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
     removeSection: (sectionId: number) => void,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
-    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
+    setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
     addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
 
@@ -405,6 +412,7 @@ function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle
                         removeSection={removeSection}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
+                        setCurField={setCurField}
                         removeField={removeField}
                         addField={addField}
                     />
@@ -420,8 +428,9 @@ export function Blueprint_Menu() {
     const [activeField, setActiveField] = useState<Object.Field | null>(null);
     const [floatingFields, setFloatingFields] = useState<{field: Object.Field, x: number, y: number}[]>([]);
     const workAreaRef = useRef<HTMLDivElement>(null);
-    const [selectedField, setSelectedField] = useState<Object.Field | null>(null);
-
+    const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
+    const [isDisplayMode, setIsDisplayMode] = useState<boolean>(false);
+    
     {/* Helper Functions */}
     function addSection() {
         setBlueprint((prev) => {
@@ -770,10 +779,44 @@ export function Blueprint_Menu() {
         setFloatingFields(prev => prev.filter(item => item.field.id !== fieldId));
     }
 
+    function updateCurField(sectionId: number, rowId: number, fieldId: number) {
+        setSelectedFieldId(fieldId);
+    }
+
+    const activeLocation = selectedFieldId ? findLocation(selectedFieldId) : null;
+    const curField = activeLocation?.field as Object.Field | undefined;
+
+    const activeSec = blueprint.sections.find(s => s.id === activeLocation?.sectionId) || defaultSection;
+    const activeRow = activeSec.rows.find(r => r.id === activeLocation?.rowId) || defaultRow;
+
+    const renderSidebarFieldConfig = () => {
+        if (!curField || !activeLocation) return;
+
+        const universalUpdate = (secId: number, rId: number, fieldId: number, newConfig: Object.FieldDefinition) => {
+            if (activeLocation.isFloating) {
+                updateFloatingConfig(secId, rId, fieldId, newConfig);
+            } else {
+                updateFieldConfig(secId, rId, fieldId, newConfig);
+            }
+        };
+
+        switch (curField.config.type) {
+            case "title":
+                return <Field_Title sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            case "subtitle":
+                return <Field_Subtitle sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            case "text_box":
+                return <Field_Config_Textbox sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            case "dropdown":
+                return <Field_Dropdown sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            default:
+                return;
+        }
+    }
+
     return (<>
     <div style={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 60px)', width: '100%', overflow: 'hidden' }}>
-        <div className="sidebar">
-            <p>Test</p>
+        <div className="sidebar">            
         </div>
         <div className='workspace'>
             <DndContext
@@ -800,6 +843,7 @@ export function Blueprint_Menu() {
                                 removeSection={removeSection}
                                 updateFieldTitle={updateFieldTitle}
                                 updateFieldConfig={updateFieldConfig}
+                                setCurField={updateCurField}
                                 removeField={removeField}
                                 addField={addField}
                             />
@@ -816,6 +860,7 @@ export function Blueprint_Menu() {
                             isFloating={false}
                             updateFieldTitle={() => {}}
                             updateFieldConfig={() => {}}
+                            setCurField={updateCurField}
                             removeField={() => {}}
                             
                         />
@@ -840,6 +885,7 @@ export function Blueprint_Menu() {
                             isFloating={true}
                             updateFieldTitle={updateFloatingTitle}
                             updateFieldConfig={updateFloatingConfig}
+                            setCurField={updateCurField}
                             removeField={removeFloatingField}
                         />
                     </div>
@@ -847,7 +893,42 @@ export function Blueprint_Menu() {
             </DndContext>
         </div>
         <div className="sidebar right">
-            <p>Test</p>
+            {(curField && activeLocation) ? <div className="sidebar-column">
+                <div className='sidebar-row'>
+                    <p>Field Name: </p>
+                    <input
+                        className="small-input"
+                        value={curField.title}
+                        placeholder='Field Name'
+                        onChange={(e) => {
+                            if (activeLocation.isFloating) {
+                                updateFloatingTitle(-1, -1, curField.id, e.target.value);
+                            } else {
+                                updateFieldTitle(activeLocation.sectionId!, activeLocation.rowId!, curField.id, e.target.value);
+                            }
+                        }}
+                    />
+                </div>
+                <div className='sidebar-row'>
+                    <p>Field Type: </p>
+                    <select
+                        className='menu-dropdown section'
+                        value={curField.config.type}
+                        onChange={(e) => {
+                            const freshConfig = generateDefaultConfig(e.target.value)
+                            updateFieldConfig(activeLocation.sectionId!, activeLocation.rowId!, curField.id, freshConfig)
+                        
+                        }}
+                    >
+                        {fieldTypes.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <h4>{fieldTypes.find(t => t.value === curField.config.type)?.label} Details: </h4>
+                {renderSidebarFieldConfig()}
+            </div>
+            : <p>-</p>}
         </div>
     </div>
 

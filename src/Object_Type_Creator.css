@@ -49,11 +49,26 @@
     gap: 1rem;
 }
 
+.field-val {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    padding: 0rem;
+}
+
 .field-wrapper h4 {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     text-transform: capitalize;
     letter-spacing: 0.05em;
     color: #922610;
+    font-family: bookmania, serif;
+    cursor: pointer;
+}
+
+.field-wrapper p {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    color: #404040;
     font-family: bookmania, serif;
     cursor: pointer;
 }
@@ -170,6 +185,7 @@
 .sidebar {
   background-color: #151416;
   border-right: 2px solid #666666;
+  color: #ffffff;
   margin: 0px;
   height: 100%;
   width: 15%;
@@ -196,4 +212,18 @@
 
 .workspace::-webkit-scrollbar {
   display: none;
+}
+
+.sidebar-column {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    gap: 1rem;
+}
+
+.sidebar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: left;
+    gap: 1rem;
 }

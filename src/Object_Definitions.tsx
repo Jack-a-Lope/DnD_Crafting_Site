@@ -1,7 +1,7 @@
 //Config Settings
 export interface TitleDetails { defaultTitle: string; }
 export interface SubtitleDetails { defaultText: string; }
-export interface TextBoxDetails { maxLength: number; multiline: boolean; }
+export interface TextBoxDetails { maxLength: number; multiline: boolean; placeholder: string; }
 export interface DropdownDetails { options: string[]; defaultOption: string; }
 export interface ToggleDetails { states: string[]; display: string; isImage: boolean }
 export interface ToggleListDetails { states: string[]; display: string[]; isImage: boolean }
