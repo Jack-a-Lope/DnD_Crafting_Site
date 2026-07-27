@@ -76,7 +76,7 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
         case "subtitle":
             return { type: "subtitle", details: { defaultText: "" } };
         case "text_box":
-            return { type: "text_box", details: { maxLength: 255, multiline: true, placeholder: "placehoder text" } };
+            return { type: "text_box", details: { maxLength: 255, multiline: true, placeholder: "placeholder text" } };
         case "dropdown":
             return { type: "dropdown", details: { options: [], defaultOption: "" } };
         default:
@@ -84,7 +84,20 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
     }
 }
 
-function Field_Title({sec, row, field, updateFieldConfig}: {
+function Field_Display_Title({field}: {field: Object.Field}) {
+    if (field.config.type !== "title") {
+        return null;
+    }
+    return (<>
+        <div className='field-wrapper'>
+            <div className='field-line'>
+                <h2>{field.config.details.defaultTitle || "Default Title"}</h2>
+            </div>
+        </div>
+    </>)
+}
+
+function Field_Config_Title({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field,
@@ -95,24 +108,22 @@ function Field_Title({sec, row, field, updateFieldConfig}: {
     }
     const details = field.config.details as Object.TitleDetails;
     return (<>
-        <div className='field-wrapper'>
-            <div className='field-line'>
-                <input 
-                    className="small-input"
-                    value={details.defaultTitle}
-                    placeholder='Default Title'
-                    onChange={(e) => {
-                        updateFieldConfig(sec.id, row.id, field.id, {
-                            type: "title",
-                            details: {
-                                ...details,
-                                defaultTitle: e.target.value,
-                            }
-                        });
-                    }}
-                />
-            </div>
-        </div>
+        <p>Default Title: </p>
+        <input 
+            className="small-input"
+            value={details.defaultTitle}
+            placeholder='Default Title'
+            onChange={(e) => {
+                updateFieldConfig(sec.id, row.id, field.id, {
+                    type: "title",
+                    details: {
+                        ...details,
+                        defaultTitle: e.target.value,
+                    }
+                });
+            }}
+        /> 
+        
     </>)
 }
 
@@ -148,16 +159,10 @@ function Field_Subtitle({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Display_Textbox({sec, row, field, updateFieldConfig}: {
-    sec: Object.Section,
-    row: Object.Row,
-    field: Object.Field,
-    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
-}) {
+function Field_Display_Textbox({field}: {field: Object.Field}) {
     if (field.config.type !== "text_box") {
         return null;
     }
-    const details = field.config.details as Object.TextBoxDetails;
     return (<>
         <div className='field-wrapper'>
             <div className='field-val'>
@@ -242,11 +247,11 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
     const renderFieldConfig = () => {
         switch (field.config.type) {
             case "title":
-                return <Field_Title sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Display_Title field={field}/>
             case "subtitle":
                 return <Field_Subtitle sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
             case "text_box":
-                return <Field_Display_Textbox sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Display_Textbox field={field} />
             case "dropdown":
                 return <Field_Dropdown sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
         }
@@ -803,7 +808,7 @@ export function Blueprint_Menu() {
 
         switch (curField.config.type) {
             case "title":
-                return <Field_Title sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Config_Title sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             case "subtitle":
                 return <Field_Subtitle sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             case "text_box":
