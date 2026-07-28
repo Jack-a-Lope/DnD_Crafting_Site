@@ -202,7 +202,35 @@ function Field_Config_Textbox({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-function Field_Dropdown({sec, row, field, updateFieldConfig}: {
+function Field_Display_Dropdown({ field }: { field: Object.Field }) {
+    if (field.config.type !== "dropdown") {
+        return null;
+    }
+    const details = field.config.details as Object.DropdownDetails;
+    const [displayOpt, setDisplayOpt] = useState<string>(details.defaultOption)
+    return (<>
+        <div className='field-wrapper'>
+            <div className='field-line'>
+                <h4>Dropdown Options: </h4>
+                <select
+                    value={displayOpt}
+                    className='menu-dropdown'
+                    onChange={(e) => {
+                        setDisplayOpt(e.target.value)
+                    }}
+                >
+                    {details.options.length > 0 ? details.options.map(opt => 
+                        <option value={opt}>{opt}</option>
+                    ) :
+                        <option/>
+                    }
+                </select>
+            </div>
+        </div>
+    </>)
+}
+
+function Field_Config_Dropdown({sec, row, field, updateFieldConfig}: {
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field,
@@ -216,18 +244,60 @@ function Field_Dropdown({sec, row, field, updateFieldConfig}: {
         <div className='field-wrapper'>
             <div className='field-line'>
                 <h4>Dropdown Options: </h4>
-                {/* 
-                    What was I doing? - Adding in all of the field types.
-                        - Then work on how to allow customization of the
-                            arrangement of sections (something like making the
-                            add button 4-way directional and allow dragging
-                            and dropping to swap locations / delete and recreate
-                            in a new place)
-                    Add in dropdown options. 
-                    Probably map through them with a button to add them.
-                    A set of small inputs with the Options numbered on the lh side
-                */}
+                <div
+                    onClick={() => 
+                        updateFieldConfig( sec.id, row.id, field.id, {
+                            type: 'dropdown',
+                            details: {
+                                ...details,
+                                options: [
+                                    ...details.options,
+                                    `Option ${details.options.length}`
+                                ]
+                            }
+                        })
+                    }
+                >
+                    <h2>+</h2>
+                </div>
             </div>
+            {details.options.map((opt, index) => 
+                <div className='field-line'>
+                    <div 
+                        onClick={() => {
+                            const filteredOptions = details.options.filter((_, i) => i !== index);
+                            
+                            updateFieldConfig(sec.id, row.id, field.id, {
+                                type: 'dropdown',
+                                details: {
+                                    ...details,
+                                    options: filteredOptions
+                                }
+                            });
+                        }}
+                    >
+                        <h2>X</h2>
+                    </div>
+                    <input
+                        className='small-input'
+                        value={opt}
+                        onChange={(e) => {
+                            const newOptions = [...details.options];
+                            newOptions[index] = e.target.value;
+
+                            updateFieldConfig(sec.id, row.id, field.id, {
+                                type: 'dropdown',
+                                details: {
+                                    ...details,
+                                    defaultOption: newOptions.length > 0 ? newOptions[0] : '',
+                                    options: newOptions
+                                }
+                            })
+                        }}
+                    >
+                    </input>
+                </div>
+            )}
         </div>
     </>)
 }
@@ -253,7 +323,7 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
             case "text_box":
                 return <Field_Display_Textbox field={field} />
             case "dropdown":
-                return <Field_Dropdown sec={sec} row={row} field={field} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Display_Dropdown field={field} />
         }
     }
 
@@ -814,7 +884,7 @@ export function Blueprint_Menu() {
             case "text_box":
                 return <Field_Config_Textbox sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             case "dropdown":
-                return <Field_Dropdown sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+                return <Field_Config_Dropdown sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             default:
                 return;
         }
