@@ -6,7 +6,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useDroppable, useDndContext } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css'
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css';
+import { evaluate } from 'mathjs';
 import * as Object from './Object_Definitions.tsx'
 
 const defaultStyle: Object.StyleDetails = {
@@ -32,6 +33,7 @@ const defaultBlueprint: Object.Type = {
 const defaultField: Object.Field = {
     id: -1,
     title: "Field Name",
+    variableName: "empty",
     config: {
         type: "text_box",
         details: {
@@ -66,6 +68,7 @@ const fieldTypes = [
     { value: 'toggle', label: "Toggle" },
     { value: 'toggle_list', label: "Toggle List"}, 
     { value: 'image', label: "Image" }, 
+    { value: 'numeric', label: "Numeric" },
     { value: 'var_len', label: "Custom" },
 ] as const;
 
@@ -302,6 +305,79 @@ function Field_Config_Dropdown({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
+{/* What was I doing? I was implementing formulas. Pretty much I need to connect
+    this to the dictionary of numeric values in the blueprint. These numeric
+    values are then going to be updated when changed here and other elements will
+    reference them with const result = evaluate(formula, dicitonary).
+    I should also create a little copy button to get the variable from the numeric
+    element to be used somewhere else. I'm also going to create the regex to
+    insert the formula into short and long text areas.
+
+    Then I was going to go in and add a few more fields before setting up the cosmetic
+    and layout options.
+        Toggles / list of toggles
+        images
+        variable size boxes that can be dragged to resize
+        divider bars
+        toggle for text alignment and row/column format
+        customize colors, background, border style, fonts and more
+            Probably create a tab for object themes with customizable
+                h1 - h4, p, color swatches, border styles, bg images etc
+                
+    Add in the ability to switch which view (Form or Display is being shown)
+        Display should have options for fully extended, condensed and collapsed
+    Then I need to set up the database side of this and the ability to save the
+    workspace.
+    Then I need to set up the use of the formula and the custom fields
+    Then I need to add in quality of life features like ctrl + c/x/v/z and maybe zooming
+        Also when I add in the hiding buttons
+    Then maybe add in the ability to save element snippits and create a default library
+    to make my life easier
+    
+*/}
+function Field_Display_Numeric({field}: {field: Object.Field}) {
+    if (field.config.type !== "text_box") {
+        return null;
+    }
+    return (<>
+        <div className='field-wrapper'>
+            <div className='field-val'>
+                <h4>{field.title}:</h4>
+                <p>{field.config.details.placeholder}</p>
+            </div>
+        </div>
+    </>)
+}
+
+function Field_Config_Numeric({sec, row, field, updateFieldConfig}: {
+    sec: Object.Section,
+    row: Object.Row,
+    field: Object.Field,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+}) {
+    if (field.config.type !== "text_box") {
+        return null;
+    }
+    const details = field.config.details as Object.TextBoxDetails;
+    return (<>
+        <p>Textbox Placeholder:</p>
+        <textarea 
+            className="dynamic-textarea"
+            placeholder={field.title.toLocaleLowerCase()}
+            value={field.config.details.placeholder}
+            onChange={(e) => {
+                updateFieldConfig(sec.id, row.id, field.id, {
+                    type: "text_box",
+                    details: {
+                        ...details,
+                        placeholder: e.target.value
+                    }
+                });
+            }}
+        />
+    </>)
+}
+
 function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, updateFieldConfig, removeField, setCurField }: { 
     sec: Object.Section,
     row: Object.Row,
@@ -506,6 +582,7 @@ export function Blueprint_Menu() {
     const workAreaRef = useRef<HTMLDivElement>(null);
     const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
     const [isDisplayMode, setIsDisplayMode] = useState<boolean>(false);
+    const [curSheetValues, setCurSheetValues] = useState<{ [key: string]: number }>({});
     
     {/* Helper Functions */}
     function addSection() {
@@ -643,6 +720,7 @@ export function Blueprint_Menu() {
     }
 
     function updateFieldTitle(sectionId: number, rowId: number, fieldId: number, newTitle: string) {
+        const variableName = newTitle.toLowerCase().replace(/\s+/g, '_');
         setBlueprint((prev) => ({
             ...prev,
             sections: prev.sections.map((section) => 
@@ -651,7 +729,7 @@ export function Blueprint_Menu() {
                 row.id === rowId
                 ? {...row, fields: row.fields.map((field) => 
                     field.id === fieldId
-                    ? {...field, title: newTitle}
+                    ? {...field, title: newTitle, variableName: variableName}
                     : field
                 )}
                 : row
@@ -840,8 +918,9 @@ export function Blueprint_Menu() {
     }
 
     function updateFloatingTitle(sectionId: number, rowId: number, fieldId: number, newTitle: string) {
+        const variableName = newTitle.toLowerCase().replace(/\s+/g, '_');
         setFloatingFields(prev => prev.map(item => 
-            item.field.id === fieldId ? { ...item, field: { ...item.field, title: newTitle } } : item
+            item.field.id === fieldId ? { ...item, field: { ...item.field, title: newTitle, variableName: variableName } } : item
         ));
     }
 

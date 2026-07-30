@@ -7,6 +7,7 @@ export interface ToggleDetails { states: string[]; display: string; isImage: boo
 export interface ToggleListDetails { states: string[]; display: string[]; isImage: boolean }
 export interface ImageDetails { url: string; maxWidth: number; maxHeight: number; subtitle: string; inline: boolean }
 export interface VarLenDetails { defaultTitle: string; defaultDesc: string }
+export interface NumericDetails { defaultValue: number; allowNegative: boolean; isPercentage: boolean; isFormula: boolean; formulaString: string; }
 export interface EmptyDetails { }
 
 export type FieldDefinition = 
@@ -17,12 +18,14 @@ export type FieldDefinition =
     | { type: "toggle"; details: ToggleDetails }
     | { type: "toggle_list"; details: ToggleListDetails }
     | { type: "image"; details: ImageDetails }
+    | { type: "numeric"; details: NumericDetails }
     | { type: "var_len"; details: VarLenDetails };
 
 //Generic definition of a field
 export interface Field {
     id: number; //Unique id for the field
     title: string; //Name of the field as displayed to users
+    variableName: string;
     config: FieldDefinition; 
     dimensions: {
         width: number;
