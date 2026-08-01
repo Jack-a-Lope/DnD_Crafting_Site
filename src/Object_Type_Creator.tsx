@@ -9,6 +9,9 @@ import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css';
 import { evaluate } from 'mathjs';
 import * as Object from './Object_Definitions.tsx'
+import ReactGridLayout, { useContainerWidth } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
 const defaultStyle: Object.StyleDetails = {
     borderColor: '#922610',
@@ -32,8 +35,9 @@ const defaultBlueprint: Object.Type = {
 
 const defaultField: Object.Field = {
     id: -1,
-    title: "Field Name",
-    variableName: "empty",
+    title: "",
+    variableName: "",
+    customVariableName: false,
     config: {
         type: "text_box",
         details: {
@@ -82,6 +86,8 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
             return { type: "text_box", details: { maxLength: 255, multiline: true, placeholder: "placeholder text" } };
         case "dropdown":
             return { type: "dropdown", details: { options: [], defaultOption: "" } };
+        case "numeric":
+            return { type: "numeric", details: { defaultValue: 0, allowNegative: false, isPercentage: false, isFormula: false, directlyModifiable: true, formulaString: "" } };
         default:
             return { type: "title", details: { defaultTitle: "" } };
     }
@@ -305,14 +311,7 @@ function Field_Config_Dropdown({sec, row, field, updateFieldConfig}: {
     </>)
 }
 
-{/* What was I doing? I was implementing formulas. Pretty much I need to connect
-    this to the dictionary of numeric values in the blueprint. These numeric
-    values are then going to be updated when changed here and other elements will
-    reference them with const result = evaluate(formula, dicitonary).
-    I should also create a little copy button to get the variable from the numeric
-    element to be used somewhere else. I'm also going to create the regex to
-    insert the formula into short and long text areas.
-
+{/*
     Then I was going to go in and add a few more fields before setting up the cosmetic
     and layout options.
         Toggles / list of toggles
@@ -335,55 +334,226 @@ function Field_Config_Dropdown({sec, row, field, updateFieldConfig}: {
     to make my life easier
     
 */}
-function Field_Display_Numeric({field}: {field: Object.Field}) {
-    if (field.config.type !== "text_box") {
+function Field_Display_Numeric({field, formulas}: {field: Object.Field, formulas: Record<string, number>}) {
+    if (field.config.type !== "numeric") {
         return null;
     }
+    const details = field.config.details as Object.NumericDetails;
     return (<>
         <div className='field-wrapper'>
             <div className='field-val'>
-                <h4>{field.title}:</h4>
-                <p>{field.config.details.placeholder}</p>
+                <div className='field-line'>
+                    <h4>{field.title}:</h4>
+                    <img 
+                        src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/duplicateIcon.png"
+                        alt="Copy"
+                        className="menu-btn-icon object"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(field.variableName.toString());
+                        }}
+                    />
+                </div>
+                {details.isFormula ? 
+                    <div>
+                        <p>
+                            {(() => {
+                                try {
+                                    const rawResult = evaluate(details.formulaString, formulas);
+                                    const safeNum = Number(rawResult);
+                                    if (!isNaN(safeNum)) {
+                                        return safeNum;
+                                    } else {
+                                        return 0;
+                                    }
+                                }
+                                catch (error) {
+                                    console.error("Error evaluating formula:", error);
+                                    console.log("Formulas:", formulas);
+                                    return 0;
+                                }
+                            })()}
+                        </p>
+                    </div> 
+                    : 
+                    <div>
+                        <p>{details.defaultValue}</p>
+                    </div>
+                }
             </div>
         </div>
     </>)
 }
 
-function Field_Config_Numeric({sec, row, field, updateFieldConfig}: {
+function Field_Config_Numeric({sec, row, field, updateFieldConfig, updateNumericVal, updateFieldVariableName, variableNameExists}: {
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field,
-    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
+    updateNumericVal: (fieldVarName: string, fieldVal: number) => void,
+    updateFieldVariableName: (sectionId: number, rowId: number, fieldId: number, newVariableName: string) => void,
+    variableNameExists: (variableName: string) => boolean
 }) {
-    if (field.config.type !== "text_box") {
+    if (field.config.type !== "numeric") {
         return null;
     }
-    const details = field.config.details as Object.TextBoxDetails;
+    const details = field.config.details as Object.NumericDetails;
+    const [fieldVarName, setFieldVarName] = useState<string>(field.variableName);
+    const [errorMessage, setErrorMessage] = useState<boolean>(false);
+
+    useEffect(() => {
+        setFieldVarName(field.variableName);
+        setErrorMessage(false);
+    }, [field.id]);
     return (<>
-        <p>Textbox Placeholder:</p>
-        <textarea 
-            className="dynamic-textarea"
-            placeholder={field.title.toLocaleLowerCase()}
-            value={field.config.details.placeholder}
-            onChange={(e) => {
-                updateFieldConfig(sec.id, row.id, field.id, {
-                    type: "text_box",
-                    details: {
-                        ...details,
-                        placeholder: e.target.value
-                    }
-                });
-            }}
-        />
+        <div className='field-line'>
+            <p>Variable Name:</p>
+            <div className='field-line' style={{flexDirection: 'column', alignItems: 'flex-end', padding: '0rem', gap: '0rem'}}>
+                <input 
+                    className='small-input'
+                    type='text'
+                    value={fieldVarName}
+                    style={{ width: '100%'}}
+                    onChange={(e) => {
+                        const typedValue = e.target.value;
+                        setFieldVarName(typedValue);
+                        
+                        if (typedValue !== field.variableName && variableNameExists(typedValue)) {
+                            setErrorMessage(true);
+
+                        } else {
+                            setErrorMessage(false);
+                            updateFieldVariableName(sec.id, row.id, field.id, typedValue);
+                        }
+                    }}
+                />
+                {errorMessage && (
+                    <p className="error-message">
+                        *Variable name already exists. Please choose a different name.
+                    </p>
+                )}
+            </div>
+            
+        </div>
+        <div className="field-line">
+            <p>Allow Negative:</p>
+            <div 
+                className={`custom-toggle ${details.allowNegative ? 'active' : ''}`}
+                onClick={() => {
+                    updateFieldConfig(sec.id, row.id, field.id, {
+                        type: "numeric",
+                        details: {
+                            ...details,
+                            allowNegative: !details.allowNegative
+                        }
+                    });
+                }}
+            >
+                <div className="toggle-knob"></div>
+            </div>
+        </div>
+        <div className="field-line">
+            <p>As Percentage:</p>
+            <div 
+                className={`custom-toggle ${details.isPercentage ? 'active' : ''}`}
+                onClick={() => {
+                    updateFieldConfig(sec.id, row.id, field.id, {
+                        type: "numeric",
+                        details: {
+                            ...details,
+                            isPercentage: !details.isPercentage
+                        }
+                    });
+                }}
+            >
+                <div className="toggle-knob"></div>
+            </div>
+        </div>
+        <div className="field-line">
+            <p>Formula:</p>
+            <div 
+                className={`custom-toggle ${details.isFormula ? 'active' : ''}`}
+                onClick={() => {
+                    updateFieldConfig(sec.id, row.id, field.id, {
+                        type: "numeric",
+                        details: {
+                            ...details,
+                            isFormula: !details.isFormula
+                        }
+                    });
+                }}
+            >
+                <div className="toggle-knob"></div>
+            </div>
+        </div>
+        <div className="field-line">
+            <p>Directly Modifiable:</p>
+            <div 
+                className={`custom-toggle ${details.directlyModifiable ? 'active' : ''}`}
+                onClick={() => {
+                    updateFieldConfig(sec.id, row.id, field.id, {
+                        type: "numeric",
+                        details: {
+                            ...details,
+                            directlyModifiable: !details.directlyModifiable
+                        }
+                    });
+                }}
+            >
+                <div className="toggle-knob"></div>
+            </div>
+        </div>
+        {details.isFormula ? 
+            <div>
+                <p>Formula: </p>
+                <textarea 
+                    className="dynamic-textarea"
+                    placeholder='Formula'
+                    value={field.config.details.formulaString}
+                    style={{ marginTop: '.5rem', alignSelf: 'right'}}
+                    onChange={(e) => {
+                        updateFieldConfig(sec.id, row.id, field.id, {
+                            type: "numeric",
+                            details: {
+                                ...details,
+                                formulaString: e.target.value
+                            }
+                        });
+                        updateNumericVal(field.variableName, Number(e.target.value));
+                    }}
+                />
+            </div> 
+            : 
+            <div className='field-line'>
+                <p>Default Value:</p>
+                <input 
+                    className='small-input'
+                    type='number'
+                    value={details.defaultValue}
+                    style={{ marginTop: '.5rem'}}
+                    onChange={(e) => {
+                        updateFieldConfig(sec.id, row.id, field.id, {
+                            type: "numeric",
+                            details: {
+                                ...details,
+                                defaultValue: Number(e.target.value)
+                            }
+                        });
+                        updateNumericVal(field.variableName, Number(e.target.value));
+                    }}
+                />
+            </div>
+        }
     </>)
 }
 
-function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, updateFieldConfig, removeField, setCurField }: { 
+function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFieldTitle, updateFieldConfig, removeField, setCurField }: { 
     sec: Object.Section,
     row: Object.Row,
     field: Object.Field, 
     isOverlay: boolean,
     isFloating: boolean,
+    formulas: Record<string, number>,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
@@ -400,6 +570,8 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
                 return <Field_Display_Textbox field={field} />
             case "dropdown":
                 return <Field_Display_Dropdown field={field} />
+            case "numeric":
+                return <Field_Display_Numeric field={field} formulas={formulas} />
         }
     }
 
@@ -472,9 +644,10 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, updateFieldTitle, 
     </>)
 }
 
-function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
+function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
     sec: Object.Section,
     row: Object.Row,
+    formulas: Record<string, number>,
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
     removeSection: (sectionId: number) => void,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
@@ -527,6 +700,7 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
                         field={field}
                         isOverlay={false}
                         isFloating={false}
+                        formulas={formulas}
                         updateFieldTitle={updateFieldTitle}
                         updateFieldConfig={updateFieldConfig}
                         setCurField={setCurField}
@@ -541,8 +715,9 @@ function Menu_Row({ sec, row, updateSectionTitle, removeSection, updateFieldTitl
     </>)
 }
 
-function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
+function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
     sec: Object.Section, 
+    formulas: Record<string, number>,
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
     removeSection: (sectionId: number) => void,
     updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
@@ -554,12 +729,12 @@ function Menu_Section({ sec, updateSectionTitle, removeSection, updateFieldTitle
     return (<>
         <div className="section-wrapper">
             <div className="section-primary">
-                
                 {sec.rows.map((row) => (
                     <Menu_Row
                         key={row.id}
                         sec={sec}
                         row={row}
+                        formulas={formulas}
                         updateSectionTitle={updateSectionTitle}
                         removeSection={removeSection}
                         updateFieldTitle={updateFieldTitle}
@@ -720,7 +895,13 @@ export function Blueprint_Menu() {
     }
 
     function updateFieldTitle(sectionId: number, rowId: number, fieldId: number, newTitle: string) {
-        const variableName = newTitle.toLowerCase().replace(/\s+/g, '_');
+        const targetSection = blueprint.sections.find(s => s.id === sectionId);
+        const targetRow = targetSection?.rows.find(r => r.id === rowId);
+        const targetField = targetRow?.fields.find(f => f.id === fieldId);
+        console.log(targetField?.customVariableName);
+        
+        const oldVariableName = targetField?.variableName;
+        const newVariableName = newTitle.toLowerCase().replace(/\s+/g, '_');
         setBlueprint((prev) => ({
             ...prev,
             sections: prev.sections.map((section) => 
@@ -728,13 +909,45 @@ export function Blueprint_Menu() {
             ? {...section, rows: section.rows.map((row) => 
                 row.id === rowId
                 ? {...row, fields: row.fields.map((field) => 
-                    field.id === fieldId
-                    ? {...field, title: newTitle, variableName: variableName}
+                    field.id === fieldId && !targetField?.customVariableName
+                    ? {...field, title: newTitle, variableName: newVariableName}
+                    :  field.id === fieldId && targetField?.customVariableName
+                    ? {...field, title: newTitle}
                     : field
                 )}
                 : row
             )}
             : section
+            )
+        }))
+        if (oldVariableName && oldVariableName !== newVariableName && !targetField?.customVariableName) {
+            setCurSheetValues((prevVals) => {
+                const newVals = { ...prevVals };
+                const existingValue = newVals[oldVariableName] || 0; 
+                
+                delete newVals[oldVariableName]; 
+                newVals[newVariableName] = existingValue; 
+                
+                return newVals;
+            });
+        }
+    }
+
+    function updateFieldVariableName(sectionId: number, rowId: number, fieldId: number, newVariableName: string) {
+        setBlueprint((prev) => ({
+            ...prev,
+            sections: prev.sections.map((section) => 
+                section.id === sectionId
+                ? {...section, rows: section.rows.map((row) => 
+                    row.id === rowId
+                    ? {...row, fields: row.fields.map((field) => 
+                        field.id === fieldId
+                        ? {...field, variableName: newVariableName, customVariableName: true}
+                        : field
+                    )}
+                    : row
+                )}
+                : section
             )
         }))
     }
@@ -938,6 +1151,22 @@ export function Blueprint_Menu() {
         setSelectedFieldId(fieldId);
     }
 
+    function updateCurSheetVals(fieldVarName: string, fieldVal: number) {
+        setCurSheetValues((cur) => ({ ...cur, [fieldVarName]: fieldVal }))
+    }
+
+    function variableNameExists(variableName: string): boolean {
+        return variableName in curSheetValues;
+    }
+
+    function removeCurSheetVals(fieldVarName: string) {
+        setCurSheetValues((prev) => {
+            const nextValues = { ...prev };
+            delete nextValues[fieldVarName];
+            return nextValues;
+        });
+    }
+
     const activeLocation = selectedFieldId ? findLocation(selectedFieldId) : null;
     const curField = activeLocation?.field as Object.Field | undefined;
 
@@ -964,6 +1193,8 @@ export function Blueprint_Menu() {
                 return <Field_Config_Textbox sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             case "dropdown":
                 return <Field_Config_Dropdown sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            case "numeric":
+                return <Field_Config_Numeric sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig} updateNumericVal={updateCurSheetVals} updateFieldVariableName={updateFieldVariableName} variableNameExists={variableNameExists} />
             default:
                 return;
         }
@@ -994,6 +1225,7 @@ export function Blueprint_Menu() {
                             <Menu_Section 
                                 key={sec.id}
                                 sec={sec}
+                                formulas={curSheetValues}
                                 updateSectionTitle={updateSectionTitle}
                                 removeSection={removeSection}
                                 updateFieldTitle={updateFieldTitle}
@@ -1013,6 +1245,7 @@ export function Blueprint_Menu() {
                             field={activeField}
                             isOverlay={true}
                             isFloating={false}
+                            formulas={curSheetValues}
                             updateFieldTitle={() => {}}
                             updateFieldConfig={() => {}}
                             setCurField={updateCurField}
@@ -1036,6 +1269,7 @@ export function Blueprint_Menu() {
                             sec={defaultSection} 
                             row={defaultRow} 
                             field={item.field} 
+                            formulas={curSheetValues}
                             isOverlay={false}
                             isFloating={true}
                             updateFieldTitle={updateFloatingTitle}
