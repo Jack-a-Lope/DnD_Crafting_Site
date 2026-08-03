@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from './supabaseClient.tsx'
 import { useAuth } from './Auth_Context';
 import { DragOverlay, DndContext, pointerWithin, type DragEndEvent } from '@dnd-kit/core';
@@ -9,9 +9,9 @@ import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css';
 import { evaluate } from 'mathjs';
 import * as Object from './Object_Definitions.tsx'
-import ReactGridLayout, { useContainerWidth } from "react-grid-layout";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
+import { GridStack } from "gridstack/dist/react";
+import type { ComponentProps, ComponentType } from "react";
+import "gridstack/dist/gridstack.css";
 
 const defaultStyle: Object.StyleDetails = {
     borderColor: '#922610',
@@ -63,6 +63,9 @@ const defaultSection: Object.Section = {
     rows: [defaultRow],
     startRevealed: true
 }
+
+const widget = <P extends object>(C: ComponentType<P>) =>
+  C as unknown as ComponentType<Record<string, unknown>>;
 
 const fieldTypes = [
     { value: 'title', label: "Title" }, 
@@ -575,55 +578,17 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
         }
     }
 
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({
-        id: field.id,
-        transition: {
-            duration: 350,
-            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-        }
-    });
+    const handleRef = useRef<HTMLDivElement | null>(null);
 
-    const style = isOverlay ? {
-        width: '100%',
-        borderRadius: '8px',
-        boxShadow: '0px 15px 30px rgba(0,0,0,0.2)',
-        backgroundColor: "#ffffffAA",
-        cursor: 'grabbing'
-    } : {
-        transform: CSS.Translate.toString(transform),
-        transition,
-        zIndex: isDragging ? 999 : 1,
-        position: isDragging ? "relative" : ("static" as any), 
-        opacity: isDragging ? 0 : 1,
-        backgroundColor: isDragging? "#ffffff" : "#ffffff00",
-        borderRadius: isDragging? "8px" : "0px",
-
-        ...(isFloating && {
-            width: '320px',
-            height: 'max-content',
-            backgroundColor: '#fff1e0',
-            borderRadius: '8px',
-            boxShadow: '0px 10px 20px rgba(0,0,0,0.15)', // Slightly softer shadow than the dragged item
-        })
-    }
 
     return (<>
         <div 
-            ref={isOverlay ? null : setNodeRef}
-            style={style} 
             className="section-wrapper field"
             onClick={() => {
                 setCurField(sec.id, row.id, field.id);
             }}
         >
-            <div {...(isOverlay ? {} : attributes)} {...(isOverlay ? {} : listeners)} style={{ cursor: 'grab', padding: '.2rem' }}>
+            <div ref={handleRef} className="field-handle" style={{ cursor: 'grab', padding: '.2rem' }}>
                 ⠿
             </div>
             <div className='section-primary'>
@@ -663,6 +628,35 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
     const {over} = useDndContext();
     const isHovered = over?.id === row.id || row.fields.some(f => f.id === over?.id);
 
+    {/* The drag and drop and resize stuff */}
+
+    type FieldOptions = ComponentProps<typeof GridStack>["options"];
+    const options: FieldOptions = {
+        column: 12,
+        cellHeight: 50,
+        acceptWidgets: true,
+        children: row.fields.map((field, index) => ({
+            id: String(field.id),
+            x: (index * 4) % 12,
+            y: Math.floor(index / 3) * 2,
+            w: 4,
+            h: 2,
+            component: 'Menu_Field',
+            props: {
+                sec: sec,
+                row: row,
+                field: field,
+                isOverlay: false,
+                isFloating: false,
+                formulas: formulas,
+                updateFieldTitle: updateFieldTitle,
+                updateFieldConfig: updateFieldConfig,
+                setCurField: setCurField,
+                removeField: removeField
+            },
+        })),
+    }
+
     return (<>
         <div className='section-row'>
             <input 
@@ -684,31 +678,14 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
             </div>
         </div>
 
-        <SortableContext
-            items={row.fields.map(field => field.id)}
-            strategy={rectSortingStrategy}
-        >
+        <div className="grid-stack">
             <div 
                 ref={setNodeRef} 
                 className={`row-field-list ${isHovered ? 'is-drag-over' : ''}`}
             >
-                {row.fields.map((field) => (
-                    <Menu_Field 
-                        key={field.id}
-                        sec={sec}
-                        row={row}
-                        field={field}
-                        isOverlay={false}
-                        isFloating={false}
-                        formulas={formulas}
-                        updateFieldTitle={updateFieldTitle}
-                        updateFieldConfig={updateFieldConfig}
-                        setCurField={setCurField}
-                        removeField={removeField}
-                    />
-                ))}
+                <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}} />
             </div>
-        </SortableContext>
+        </div>
         
         
         
@@ -748,6 +725,43 @@ function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, update
         </div>
         
     </>)
+}
+
+export function Simple0({formulas, updateFieldTitle, updateFieldConfig, setCurField, removeField}: {
+    formulas: Record<string, number>,
+    updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
+    setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
+    removeField: (sectionId: number, rowId: number, fieldId: number) => void
+}) {
+
+    type FieldOptions = ComponentProps<typeof GridStack>["options"];
+    const options: FieldOptions = {
+        column: 12,
+        cellHeight: 50,
+        children: [
+            { id: "a", x: 0, y: 0, w: 2, h: 2, component: "Menu_Field", 
+                props: {
+                    sec: defaultSection,
+                    row: defaultRow,
+                    field: defaultField,
+                    isOverlay: false,
+                    isFloating: false,
+                    formulas: formulas,
+                    updateFieldTitle: updateFieldTitle,
+                    updateFieldConfig: updateFieldConfig,
+                    setCurField: setCurField,
+                    removeField: removeField
+                }
+            },
+        ],
+    }
+
+  return (
+    <div>
+        <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}} />
+    </div>
+  );
 }
 
 export function Blueprint_Menu() {
@@ -1205,12 +1219,6 @@ export function Blueprint_Menu() {
         <div className="sidebar">            
         </div>
         <div className='workspace'>
-            <DndContext
-                collisionDetection={pointerWithin}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-            >
                 <div className="blueprint-wrapper" ref={workAreaRef}>
                     <div className='blueprint-container'>
                         <p>{blueprint.title}</p>
@@ -1279,7 +1287,6 @@ export function Blueprint_Menu() {
                         />
                     </div>
                 ))}
-            </DndContext>
         </div>
         <div className="sidebar right">
             {(curField && activeLocation) ? <div className="sidebar-column">
@@ -1322,5 +1329,12 @@ export function Blueprint_Menu() {
     </div>
 
     </>)
+
+    // return (<>
+    //     <div style={{backgroundColor:"f0f0f0"}}>
+    //         <Simple0 formulas={curSheetValues} updateFieldTitle={updateFieldTitle} updateFieldConfig={updateFieldConfig} setCurField={updateCurField} removeField={removeField}/>
+    //     </div>
+    // </>
+    // )
 }
 

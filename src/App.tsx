@@ -7,7 +7,29 @@ import { Blueprint_Menu } from "./Object_Type_Creator.tsx";
 import { supabase } from "./supabaseClient.tsx";
 import './Item_Card.css'
 import './App.css'
+import { GridStack } from "gridstack/dist/react";
+import type { ComponentProps, ComponentType } from "react";
+import "gridstack/dist/gridstack.css";
 
+
+
+// 1. VOCABULARY — a normal React component. Nothing special about it.
+function Text({ text }: { text: string }) {
+  return <div>{text}</div>;
+}
+const widget = <P extends object>(C: ComponentType<P>) =>
+  C as unknown as ComponentType<Record<string, unknown>>;
+
+// 2. LAYOUT — plain data. This is what you'd save to Supabase.
+const options: BoardOptions = {
+  column: 12,
+  cellHeight: 50,
+  children: [
+    { id: "a", x: 0, y: 0, w: 2, h: 2, component: "Text", props: { text: "Hello" } },
+  ],
+};
+
+// 3. RENDERER — hands both to the wrapper.
 
 function NavBar() {
   const {user} = useAuth();
@@ -34,6 +56,9 @@ function NavBar() {
     </nav>
   )
 }
+type BoardOptions = ComponentProps<typeof GridStack>["options"];
+
+
 function App() {
   const {user, loading} = useAuth();
   const navigate = useNavigate();
