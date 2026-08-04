@@ -584,6 +584,7 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
 
     const handleRef = useRef<HTMLDivElement | null>(null);
 
+
     return (<>
         <div 
             className="section-wrapper field"
@@ -718,7 +719,7 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
                 ref={setNodeRef} 
                 className={`row-field-list ${isHovered ? 'is-drag-over' : ''}`}
             >
-                <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}}>
+                <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}} key={`grid-row-${row.id}-count-${row.fields.length}`} >
                     <GridEvents onChange={handleGridChange} />
                 </GridStack>
             </div>
