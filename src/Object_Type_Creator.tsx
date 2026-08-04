@@ -9,7 +9,7 @@ import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';import './Object_Type_Creator.css';
 import { evaluate } from 'mathjs';
 import * as Object from './Object_Definitions.tsx'
-import { GridStack } from "gridstack/dist/react";
+import { GridStack, useGridStack, type GridStackNode, type GridStackProps } from "gridstack/dist/react";
 import type { ComponentProps, ComponentType } from "react";
 import "gridstack/dist/gridstack.css";
 
@@ -38,6 +38,12 @@ const defaultField: Object.Field = {
     title: "",
     variableName: "",
     customVariableName: false,
+    grid: {
+        x: 0,
+        y: 0,
+        w: 24,
+        h: 2
+    },
     config: {
         type: "text_box",
         details: {
@@ -371,8 +377,6 @@ function Field_Display_Numeric({field, formulas}: {field: Object.Field, formulas
                                     }
                                 }
                                 catch (error) {
-                                    console.error("Error evaluating formula:", error);
-                                    console.log("Formulas:", formulas);
                                     return 0;
                                 }
                             })()}
@@ -580,7 +584,6 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
 
     const handleRef = useRef<HTMLDivElement | null>(null);
 
-
     return (<>
         <div 
             className="section-wrapper field"
@@ -609,7 +612,7 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
     </>)
 }
 
-function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
+function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField, updateFieldGrid }: { 
     sec: Object.Section,
     row: Object.Row,
     formulas: Record<string, number>,
@@ -619,42 +622,75 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
     setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
-    addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
+    addField: (sectionId: number, rowId: number, newField: Object.Field) => void,
+    updateFieldGrid: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.GridDetails) => void
+ }) {
 
     const { setNodeRef, isOver } = useDroppable({
         id: row.id,
     });
+
+    function GridEvents({ onChange }: { onChange: (e: Event, items: GridStackNode[]) => void }) {
+        const { grid } = useGridStack();
+
+        useEffect(() => {
+            if (!grid) return;
+            grid.on("change", onChange);
+            return () => {
+                grid.off("change");
+            };
+        }, [grid, onChange]);
+
+        return null;
+    }
 
     const {over} = useDndContext();
     const isHovered = over?.id === row.id || row.fields.some(f => f.id === over?.id);
 
     {/* The drag and drop and resize stuff */}
 
+    const handleGridChange = (e: Event, items: any[]) => {        
+        items.forEach(item => {
+            updateFieldGrid(sec.id, row.id, Number(item.id), {
+                x: item.x,
+                y: item.y,
+                w: item.w,
+                h: item.h
+            })
+        });
+    };
+
     type FieldOptions = ComponentProps<typeof GridStack>["options"];
+    const numCols = 24;
+    const cellHeight = 50;
     const options: FieldOptions = {
-        column: 12,
-        cellHeight: 50,
+        column: numCols,
+        cellHeight: cellHeight,
         acceptWidgets: true,
-        children: row.fields.map((field, index) => ({
-            id: String(field.id),
-            x: (index * 4) % 12,
-            y: Math.floor(index / 3) * 2,
-            w: 4,
-            h: 2,
-            component: 'Menu_Field',
-            props: {
-                sec: sec,
-                row: row,
-                field: field,
-                isOverlay: false,
-                isFloating: false,
-                formulas: formulas,
-                updateFieldTitle: updateFieldTitle,
-                updateFieldConfig: updateFieldConfig,
-                setCurField: setCurField,
-                removeField: removeField
-            },
-        })),
+        children: row.fields.length > 0 ?
+            row.fields.map((field, index) => ({
+                id: String(field.id),
+                x: field.grid?.x ?? (index * numCols / 3) % numCols,
+                y: field.grid?.y ?? Math.floor(index / 3) * 2,
+                w: field.grid?.w ?? numCols,
+                h: field.grid?.h ?? 2,
+                minH: 2,
+                minW: 8,
+                component: 'Menu_Field',
+                props: {
+                    sec: sec,
+                    row: row,
+                    field: field,
+                    isOverlay: false,
+                    isFloating: false,
+                    formulas: formulas,
+                    updateFieldTitle: updateFieldTitle,
+                    updateFieldConfig: updateFieldConfig,
+                    setCurField: setCurField,
+                    removeField: removeField
+                },
+            }))
+            : [],
     }
 
     return (<>
@@ -678,21 +714,21 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
             </div>
         </div>
 
-        <div className="grid-stack">
             <div 
                 ref={setNodeRef} 
                 className={`row-field-list ${isHovered ? 'is-drag-over' : ''}`}
             >
-                <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}} />
+                <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}}>
+                    <GridEvents onChange={handleGridChange} />
+                </GridStack>
             </div>
-        </div>
         
         
         
     </>)
 }
 
-function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField }: { 
+function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField, updateFieldGrid }: { 
     sec: Object.Section, 
     formulas: Record<string, number>,
     updateSectionTitle: (sectionId: number, newTitle: string) => void, 
@@ -701,7 +737,9 @@ function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, update
     updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
     setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
     removeField: (sectionId: number, rowId: number, fieldId: number) => void,
-    addField: (sectionId: number, rowId: number, newField: Object.Field) => void }) {
+    addField: (sectionId: number, rowId: number, newField: Object.Field) => void,
+    updateFieldGrid: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.GridDetails) => void
+}) {
 
     return (<>
         <div className="section-wrapper">
@@ -719,49 +757,13 @@ function Menu_Section({ sec, formulas, updateSectionTitle, removeSection, update
                         setCurField={setCurField}
                         removeField={removeField}
                         addField={addField}
+                        updateFieldGrid={updateFieldGrid}
                     />
                 ))}
             </div>
         </div>
         
     </>)
-}
-
-export function Simple0({formulas, updateFieldTitle, updateFieldConfig, setCurField, removeField}: {
-    formulas: Record<string, number>,
-    updateFieldTitle: (sectionId: number, rowId: number, fieldId: number, newTitle: string) => void,
-    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void,
-    setCurField: (sectionId: number, rowId: number, fieldId: number) => void,
-    removeField: (sectionId: number, rowId: number, fieldId: number) => void
-}) {
-
-    type FieldOptions = ComponentProps<typeof GridStack>["options"];
-    const options: FieldOptions = {
-        column: 12,
-        cellHeight: 50,
-        children: [
-            { id: "a", x: 0, y: 0, w: 2, h: 2, component: "Menu_Field", 
-                props: {
-                    sec: defaultSection,
-                    row: defaultRow,
-                    field: defaultField,
-                    isOverlay: false,
-                    isFloating: false,
-                    formulas: formulas,
-                    updateFieldTitle: updateFieldTitle,
-                    updateFieldConfig: updateFieldConfig,
-                    setCurField: setCurField,
-                    removeField: removeField
-                }
-            },
-        ],
-    }
-
-  return (
-    <div>
-        <GridStack options={options} components={{Menu_Field: widget(Menu_Field)}} />
-    </div>
-  );
 }
 
 export function Blueprint_Menu() {
@@ -828,7 +830,6 @@ export function Blueprint_Menu() {
     }
 
     function addField(sectionId: number, rowId: number, newField: Object.Field = defaultField) {
-        console.log("Add Field id: ", sectionId);
         setBlueprint((prev) => {
             const uniqueFieldId = Date.now();
             
@@ -890,6 +891,27 @@ export function Blueprint_Menu() {
         })
     }
 
+    function updateFieldGrid(sectionId: number, rowId: number, fieldId: number, newGrid: Object.GridDetails) {
+        setBlueprint((prev) => {
+            return {
+                ...prev,
+                sections: prev.sections.map((section) =>
+                    section.id === sectionId
+                    ? { ...section, rows: section.rows.map((row) => 
+                        row.id === rowId
+                        ? { ...row, fields: row.fields.map((field) => 
+                            field.id === fieldId
+                            ? {...field, grid: newGrid}
+                            : field
+                        ) }
+                        : row
+                    ) }
+                    : section
+                )
+            }
+        })
+    }
+
     function updateBlueprintTitle(newTitle: string) {
         setBlueprint((prev) => ({
             ...prev,
@@ -912,7 +934,6 @@ export function Blueprint_Menu() {
         const targetSection = blueprint.sections.find(s => s.id === sectionId);
         const targetRow = targetSection?.rows.find(r => r.id === rowId);
         const targetField = targetRow?.fields.find(f => f.id === fieldId);
-        console.log(targetField?.customVariableName);
         
         const oldVariableName = targetField?.variableName;
         const newVariableName = newTitle.toLowerCase().replace(/\s+/g, '_');
@@ -1241,6 +1262,7 @@ export function Blueprint_Menu() {
                                 setCurField={updateCurField}
                                 removeField={removeField}
                                 addField={addField}
+                                updateFieldGrid={updateFieldGrid}
                             />
                         ))}
                     </div>
@@ -1305,6 +1327,7 @@ export function Blueprint_Menu() {
                         }}
                     />
                 </div>
+                <p>X: {curField.grid?.x}</p>
                 <div className='sidebar-row'>
                     <p>Field Type: </p>
                     <select

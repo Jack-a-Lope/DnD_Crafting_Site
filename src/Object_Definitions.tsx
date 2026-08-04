@@ -21,6 +21,13 @@ export type FieldDefinition =
     | { type: "numeric"; details: NumericDetails }
     | { type: "var_len"; details: VarLenDetails };
 
+export type GridDetails = {
+    x: number,
+    y: number,
+    w: number,
+    h: number
+}
+
 //Generic definition of a field
 export interface Field {
     id: number; //Unique id for the field
@@ -28,6 +35,12 @@ export interface Field {
     variableName: string;
     customVariableName: boolean; //whether or not the variable name is custom or auto-generated
     config: FieldDefinition; 
+    grid?: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    }
     dimensions: {
         width: number;
         height: number | "auto";
