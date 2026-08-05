@@ -5,7 +5,7 @@ export interface TextBoxDetails { maxLength: number; multiline: boolean; placeho
 export interface DropdownDetails { options: string[]; defaultOption: string; }
 export interface ToggleDetails { states: string[]; display: string; isImage: boolean }
 export interface ToggleListDetails { states: string[]; display: string[]; isImage: boolean }
-export interface ImageDetails { url: string; maxWidth: number; maxHeight: number; subtitle: string; inline: boolean }
+export interface ImageDetails { url: string; subtitle: string; inline: boolean }
 export interface VarLenDetails { defaultTitle: string; defaultDesc: string }
 export interface NumericDetails { defaultValue: number; allowNegative: boolean; isPercentage: boolean; isFormula: boolean; directlyModifiable: boolean; formulaString: string; }
 export interface EmptyDetails { }

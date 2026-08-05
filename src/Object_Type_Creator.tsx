@@ -97,6 +97,8 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
             return { type: "dropdown", details: { options: [], defaultOption: "" } };
         case "numeric":
             return { type: "numeric", details: { defaultValue: 0, allowNegative: false, isPercentage: false, isFormula: false, directlyModifiable: true, formulaString: "" } };
+        case "image":
+            return { type: "image", details: { url: "", subtitle: "", inline: false } };
         default:
             return { type: "title", details: { defaultTitle: "" } };
     }
@@ -316,6 +318,46 @@ function Field_Config_Dropdown({sec, row, field, updateFieldConfig}: {
                     </input>
                 </div>
             )}
+        </div>
+    </>)
+}
+
+function Field_Display_Image({ field }: { field: Object.Field }) {
+    if (field.config.type !== 'image') {
+        return;
+    }
+
+    const details = field.config.details as Object.ImageDetails;
+
+    return(<>
+        {details.url ?
+            <img 
+                src = {details.url}
+                className={"object-image"}
+            />
+        :
+            <img 
+                src = {'https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/defaultItemIcon.jpg'}
+                className={'object-image'}
+            />
+        }
+    </>)
+}
+
+function Field_Config_Image({sec, row, field, updateFieldConfig}: {
+    sec: Object.Section,
+    row: Object.Row,
+    field: Object.Field,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+}) {
+    if (field.config.type !== "image") {
+        return null;
+    }
+    const details = field.config.details as Object.ImageDetails;
+    return (<>
+        <div className='field-wrapper'>
+            <p>Default Image: </p>
+
         </div>
     </>)
 }
@@ -579,38 +621,38 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
                 return <Field_Display_Dropdown field={field} />
             case "numeric":
                 return <Field_Display_Numeric field={field} formulas={formulas} />
+            case "image":
+                return <Field_Display_Image field={field} />
         }
     }
 
     const handleRef = useRef<HTMLDivElement | null>(null);
 
 
-    return (<>
+    return (<div className='hider' style={{height:'100%', width:'100%'}}>
         <div 
             className="section-wrapper field"
             onClick={() => {
                 setCurField(sec.id, row.id, field.id);
             }}
+            style={{cursor:'move'}}
         >
-            <div ref={handleRef} className="field-handle" style={{ cursor: 'grab', padding: '.2rem' }}>
-                ⠿
-            </div>
             <div className='section-primary'>
-                <div style={{display:'flex', flexDirection:"column", margin:"0rem .5rem", gap:".2rem"}}>
+                <div style={{display:'flex', flexDirection:"column", margin:"0rem .5rem", gap:".2rem", justifyContent:'center'}}>
                     {renderFieldConfig()}
                 </div>
                 
             </div>
-            <img 
-                className="menu-btn-icon object" 
-                src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    removeField(sec.id, row.id, field.id);
-                }}
-            />
         </div>
-    </>)
+        <img 
+            className="menu-btn-icon hoverer" 
+            src="https://xjcrdrkyydhthtulirlv.supabase.co/storage/v1/object/public/item-images/trashIcon.png"
+            onClick={(e) => {
+                e.stopPropagation();
+                removeField(sec.id, row.id, field.id);
+            }}
+        />
+    </div>)
 }
 
 function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updateFieldTitle, updateFieldConfig, setCurField, removeField, addField, updateFieldGrid }: { 
@@ -667,7 +709,7 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
     const options: FieldOptions = {
         column: numCols,
         cellHeight: cellHeight,
-        acceptWidgets: true,
+        acceptWidgets: function(el) {return true},
         children: row.fields.length > 0 ?
             row.fields.map((field, index) => ({
                 id: String(field.id),
@@ -678,6 +720,7 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
                 minH: 2,
                 minW: 8,
                 component: 'Menu_Field',
+                style: "overflowHidden",
                 props: {
                     sec: sec,
                     row: row,
@@ -1231,6 +1274,8 @@ export function Blueprint_Menu() {
                 return <Field_Config_Dropdown sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             case "numeric":
                 return <Field_Config_Numeric sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig} updateNumericVal={updateCurSheetVals} updateFieldVariableName={updateFieldVariableName} variableNameExists={variableNameExists} />
+            case "image":
+                return <Field_Config_Image sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             default:
                 return;
         }
@@ -1337,7 +1382,6 @@ export function Blueprint_Menu() {
                         onChange={(e) => {
                             const freshConfig = generateDefaultConfig(e.target.value)
                             updateFieldConfig(activeLocation.sectionId!, activeLocation.rowId!, curField.id, freshConfig)
-                        
                         }}
                     >
                         {fieldTypes.map((t) => (
@@ -1353,12 +1397,5 @@ export function Blueprint_Menu() {
     </div>
 
     </>)
-
-    // return (<>
-    //     <div style={{backgroundColor:"f0f0f0"}}>
-    //         <Simple0 formulas={curSheetValues} updateFieldTitle={updateFieldTitle} updateFieldConfig={updateFieldConfig} setCurField={updateCurField} removeField={removeField}/>
-    //     </div>
-    // </>
-    // )
 }
 

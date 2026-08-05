@@ -100,12 +100,13 @@
     flex-grow: 1;
     flex-shrink: 1;
     flex-basis: 48%;
-    min-width: 48%;
-    max-width: 100%;
+    width: 100%;
+    height: 100%;
+
 }
 
 .section-wrapper.field:hover {
-    background-color: #ffffff;
+    background-color: #7a7a7a4a;
 }
 
 .section-wrapper h3 {
@@ -126,7 +127,7 @@
     display: flex;
     flex-direction: column;
     gap: .4rem;
-    margin: .2rem;
+    padding: 0rem, .2rem;
 }
 
 .section-row {
@@ -150,6 +151,26 @@
     outline: transparent;
     background-color: #d585858f;
     cursor: pointer;
+}
+
+.menu-btn-icon.hoverer {
+    position: absolute;
+    width: 2rem;
+    height: 2rem;
+    top: .5rem;
+    right: .5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, background-color 0.3s ease;
+    border-color: #00000000;
+    outline-color: #00000000;
+    z-index: 100000;
+}
+
+.hider:hover .menu-btn-icon.hoverer {
+    opacity: 1;
+    pointer-events: auto;
+    background-color: #ffffffc4;
 }
 
 .menu-btn-icon.object.positive:hover {
@@ -270,4 +291,15 @@
 .error-message {
     color: red;
     font-size: 0.6rem;
+}
+
+.object-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 2px solid #922610;
+  outline: 1px solid #922610;
+  outline-offset: 1px;
 }

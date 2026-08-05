@@ -151,6 +151,8 @@ body {
   outline-offset: 1px;
 }
 
+.grid-stack-item-content{overflow:hidden !important}
+
 .card-content {
   padding: 0rem 0rem 0rem 1rem;
   display: flex;
