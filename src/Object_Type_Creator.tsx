@@ -99,6 +99,8 @@ function generateDefaultConfig(newType: string): Object.FieldDefinition {
             return { type: "numeric", details: { defaultValue: 0, allowNegative: false, isPercentage: false, isFormula: false, directlyModifiable: true, formulaString: "" } };
         case "image":
             return { type: "image", details: { url: "", subtitle: "", inline: false } };
+        case "toggle_list":
+            return { type: "toggle_list", details: { states: [], display: [], isImage: false } };
         default:
             return { type: "title", details: { defaultTitle: "" } };
     }
@@ -354,10 +356,348 @@ function Field_Config_Image({sec, row, field, updateFieldConfig}: {
         return null;
     }
     const details = field.config.details as Object.ImageDetails;
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleBoxClick = () => {
+        fileInputRef.current?.click();
+    }
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setImageFile(e.dataTransfer.files[0]);
+        }
+    };
     return (<>
         <div className='field-wrapper'>
             <p>Default Image: </p>
+            <div style={{display:'flex', justifyContent: 'right', alignItems: 'right'}}>
+                <input
+                type="file"
+                accept="image/png, image/jpg, image/webp"
+                style={{ display: 'none' }}
+                ref={fileInputRef}
+                onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        setImageFile(e.target.files[0]);
+                        updateFieldConfig(sec.id, row.id, field.id, {
+                            type:'image',
+                            details: {
+                                ...details,
+                                url: String(URL.createObjectURL(e.target.files[0]))
+                            }
+                        })
+                    }
+                }}
+                />
+                <div 
+                onClick={handleBoxClick}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                style={{
+                    width: '100px',
+                    aspectRatio: 1 / 1,
+                    border: isDragging ? '3px dashed #22c55e' : '3px dashed #922610',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    overflow: 'hidden'
+                }}
+                >
+                {imageFile ? (
+                <img 
+                    src={URL.createObjectURL(imageFile)} 
+                    alt="Preview" 
+                    className="menu-img-input" 
+                />
+                ) : (
+                <div style={{ color: '#922610', fontFamily: 'bookmania' }}>
+                    <div style={{ fontSize: '5rem', margin:'0', lineHeight: '0.5', paddingTop: '1rem' }}>+</div>
+                </div>
+                )
+                }
+                </div>
 
+            </div>
+        </div>
+    </>)
+}
+
+function Field_Display_Toggle_List({field}: {field: Object.Field}) {
+    if (field.config.type !== "toggle_list") {
+        return null;
+    }
+    return (<>
+        <div className='field-wrapper'>
+            <div className='field-val'>
+                <h4>{field.title}:</h4>
+                {field.config.details.states.map((state, index) => (
+                    <div key={index}>
+                        <p>{state}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </>)
+}
+
+function Field_Config_Toggle_List({sec, row, field, updateFieldConfig}: {
+    sec: Object.Section,
+    row: Object.Row,
+    field: Object.Field,
+    updateFieldConfig: (sectionId: number, rowId: number, fieldId: number, newConfig: Object.FieldDefinition) => void, 
+}) {
+    if (field.config.type !== "toggle_list") {
+        return null;
+    }
+    const details = field.config.details as Object.ToggleListDetails;
+
+    const [imageFiles, setImageFiles] = useState<(File | null)[] | null>([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleBoxClick = () => {
+        fileInputRef.current?.click();
+    }
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setImageFiles((cur) => [
+                ...(cur || []), e.dataTransfer.files[0]
+            ]);
+        }
+    };
+    const updateImage = (file: File | null, index: number) => {
+        setImageFiles((cur) => {
+            const currentArray = cur || [];  
+            const newArray = [...currentArray]; 
+            newArray[index] = file; 
+            return newArray;
+        });
+    }
+    return (<>
+        <div className="field-line">
+            <p>Image Display:</p>
+            <div 
+                className={`custom-toggle ${details.isImage ? 'active' : ''}`}
+                onClick={() => {
+                    updateFieldConfig(sec.id, row.id, field.id, {
+                        type: "toggle_list",
+                        details: {
+                            ...details,
+                            isImage: !details.isImage
+                        }
+                    });
+                }}
+            >
+                <div className="toggle-knob"></div>
+            </div>
+        </div>
+        <div>
+            <div className='field-line'>
+                <p>States: </p>
+                <div
+                    onClick={() => 
+                        updateFieldConfig( sec.id, row.id, field.id, {
+                            type: 'toggle_list',
+                            details: {
+                                ...details,
+                                states: [
+                                    ...details.states,
+                                    `State ${details.states.length}`
+                                ]
+                            }
+                        })
+                    }
+                >
+                    <p>+</p>
+                </div>
+            </div>
+            {details.states.map((state, index) => 
+                <div className='field-line' key={index}>
+                    <div 
+                        onClick={() => {
+                            const filteredStates = details.states.filter((_, i) => i !== index);
+                            
+                            updateFieldConfig(sec.id, row.id, field.id, {
+                                type: 'toggle_list',
+                                details: {
+                                    ...details,
+                                    states: filteredStates
+                                }
+                            });
+                        }}
+                    >
+                        <h2>X</h2>
+                    </div>
+                    <input
+                        className='small-input'
+                        value={state}
+                        onChange={(e) => {
+                            const newOptions = [...details.states];
+                            newOptions[index] = e.target.value;
+
+                            updateFieldConfig(sec.id, row.id, field.id, {
+                                type: 'dropdown',
+                                details: {
+                                    ...details,
+                                    defaultOption: newOptions.length > 0 ? newOptions[0] : '',
+                                    options: newOptions
+                                }
+                            })
+                        }}
+                    >
+                    </input>
+                </div>
+            )}
+        </div>
+        <div>
+            <div className='field-line'>
+                <p>Toggle Display: </p>
+                <div
+                    onClick={() => 
+                        updateFieldConfig( sec.id, row.id, field.id, {
+                            type: 'toggle_list',
+                            details: {
+                                ...details,
+                                display: [
+                                    ...details.display,
+                                    `State ${details.display.length}`
+                                ]
+                            }
+                        })
+                    }
+                >
+                    <p>+</p>
+                </div>
+            </div>
+            {details.display.map((display, index) => 
+                <div className='field-line' key={index}>
+                    <div 
+                        onClick={() => {
+                            const filteredDisplays = details.display.filter((_, i) => i !== index);
+                            updateImage(null, index)
+                            updateFieldConfig(sec.id, row.id, field.id, {
+                                type: 'toggle_list',
+                                details: {
+                                    ...details,
+                                    display: filteredDisplays
+                                }
+                            });
+                        }}
+                    >
+                        <h2>X</h2>
+                    </div>
+                    {!details.isImage ?
+                        <input
+                            className='small-input'
+                            value={display}
+                            onChange={(e) => {
+                                const newOptions = [...details.display];
+                                newOptions[index] = e.target.value;
+
+                                updateFieldConfig(sec.id, row.id, field.id, {
+                                    type: 'dropdown',
+                                    details: {
+                                        ...details,
+                                        defaultOption: newOptions.length > 0 ? newOptions[0] : '',
+                                        options: newOptions
+                                    }
+                                })
+                            }}
+                        >
+                        </input>
+                    :
+                        <div style={{display:'flex', justifyContent: 'right', alignItems: 'right'}}>
+                            <p onClick={() => console.log(index)}>{index}</p>
+                            <input
+                            type="file"
+                            accept="image/png, image/jpg, image/webp"
+                            style={{ display: 'none' }}
+                            ref={fileInputRef}
+                            onChange={(e) => {
+                                console.log(index);
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    console.log(index);
+                                    updateImage(file, index);
+                                    const updatedDisplay = [...details.display] as Array<string | File>;
+                                    updatedDisplay[index] = file;
+
+                                    updateFieldConfig(sec.id, row.id, field.id, {
+                                        type:'toggle_list',
+                                        details: {
+                                            ...details,
+                                            display: updatedDisplay as unknown as string[]
+                                        }
+                                    })
+                                }
+                            }}
+                            />
+                            <div 
+                            onClick={handleBoxClick}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            style={{
+                                width: '100px',
+                                aspectRatio: 1 / 1,
+                                border: isDragging ? '3px dashed #22c55e' : '3px dashed #922610',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease-in-out',
+                                overflow: 'hidden'
+                            }}
+                            >
+                            {(imageFiles && imageFiles[index]) ? (
+                            <img 
+                                src={URL.createObjectURL(imageFiles[index])} 
+                                alt="Preview" 
+                                className="menu-img-input" 
+                            />
+                            ) : (
+                            <div style={{ color: '#922610', fontFamily: 'bookmania' }}>
+                                <div style={{ fontSize: '5rem', margin:'0', lineHeight: '0.5', paddingTop: '1rem' }}>+</div>
+                            </div>
+                            )
+                            }
+                            </div>
+
+                        </div>
+                    }
+                    
+                </div>
+            )}
         </div>
     </>)
 }
@@ -623,6 +963,8 @@ function Menu_Field({ sec, row, field, isOverlay, isFloating, formulas, updateFi
                 return <Field_Display_Numeric field={field} formulas={formulas} />
             case "image":
                 return <Field_Display_Image field={field} />
+            case "toggle_list":
+                return <Field_Display_Toggle_List field={field} />
         }
     }
 
@@ -709,7 +1051,7 @@ function Menu_Row({ sec, row, formulas, updateSectionTitle, removeSection, updat
     const options: FieldOptions = {
         column: numCols,
         cellHeight: cellHeight,
-        acceptWidgets: function(el) {return true},
+        acceptWidgets: function(el) {return false},
         children: row.fields.length > 0 ?
             row.fields.map((field, index) => ({
                 id: String(field.id),
@@ -1114,6 +1456,8 @@ export function Blueprint_Menu() {
                 return <Field_Config_Numeric sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig} updateNumericVal={updateCurSheetVals} updateFieldVariableName={updateFieldVariableName} variableNameExists={variableNameExists} />
             case "image":
                 return <Field_Config_Image sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
+            case "toggle_list":
+                return <Field_Config_Toggle_List sec={activeSec} row={activeRow} field={curField} updateFieldConfig={updateFieldConfig}/>
             default:
                 return;
         }
